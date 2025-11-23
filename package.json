@@ -1,0 +1,33 @@
+{
+  "name": "trading-intelligence-platform",
+  "version": "1.0.0",
+  "description": "Modern web platform for traders with economic calendar, live market data, and financial news",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"yarn workspace backend dev\" \"yarn workspace frontend dev\"",
+    "dev:backend": "yarn workspace backend dev",
+    "dev:frontend": "yarn workspace frontend dev",
+    "build": "yarn workspace backend build && yarn workspace frontend build",
+    "build:backend": "yarn workspace backend build",
+    "build:frontend": "yarn workspace frontend build",
+    "start": "yarn workspace backend start",
+    "test": "yarn workspace backend test && yarn workspace frontend test",
+    "test:backend": "yarn workspace backend test",
+    "test:frontend": "yarn workspace frontend test",
+    "lint": "yarn workspace backend lint && yarn workspace frontend lint",
+    "lint:backend": "yarn workspace backend lint",
+    "lint:frontend": "yarn workspace frontend lint",
+    "format": "yarn workspace backend format && yarn workspace frontend format"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "yarn": ">=3.0.0"
+  }
+}
