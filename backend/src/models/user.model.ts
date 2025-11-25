@@ -3,6 +3,7 @@ import { queryDb, queryDbSingle } from '../config/db.js';
 export interface UserRow {
   id: number;
   email: string;
+  name: string;
   password_hash: string;
   preferences: Record<string, unknown>;
   created_at: Date;
@@ -24,10 +25,10 @@ export class UserModel {
     );
   }
 
-  static async create(email: string, passwordHash: string): Promise<UserRow> {
+  static async create(email: string, passwordHash: string, name: string): Promise<UserRow> {
     const result = await queryDb<UserRow>(
-      'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING *',
-      [email, passwordHash]
+      'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING *',
+      [email, passwordHash, name]
     );
     return result[0];
   }

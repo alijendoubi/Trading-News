@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Load .env.local from parent directory (project root)
+dotenv.config({ path: path.join(process.cwd(), '..', '.env.local') });
 
 export const env = {
   // Application
@@ -19,6 +21,7 @@ export const env = {
   },
 
   // JWT
+  JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-key',
   jwt: {
     secret: process.env.JWT_SECRET || 'dev-secret-key',
     expiry: process.env.JWT_EXPIRY || '7d',
@@ -38,6 +41,16 @@ export const env = {
       key: process.env.NEWS_API_KEY || '',
       url: process.env.NEWS_API_URL || '',
     },
+    // New API keys
+    twelveData: process.env.TWELVE_DATA_API_KEY || '',
+    finnhub: process.env.FINNHUB_API_KEY || '',
+    polygon: process.env.POLYGON_API_KEY || '',
+    alphaVantage: process.env.ALPHA_VANTAGE_API_KEY || '',
+    currents: process.env.CURRENTS_API_KEY || '',
+    gnews: process.env.GNEWS_API_KEY || '',
+    cryptoPanic: process.env.CRYPTOPANIC_API_KEY || '',
+    fred: process.env.FRED_API_KEY || '',
+    cryptocompare: process.env.CRYPTOCOMPARE_API_KEY || '',
   },
 
   // Logging

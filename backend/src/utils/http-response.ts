@@ -71,3 +71,12 @@ export class HttpResponse {
     return this.error(res, message, 500);
   }
 }
+
+// Helper functions for convenience
+export const successResponse = <T>(res: Response, data: T, message = 'Success', status = 200): Response => {
+  return HttpResponse.success(res, data, message, status);
+};
+
+export const errorResponse = (res: Response, error: string, status = 400, details?: unknown): Response => {
+  return HttpResponse.error(res, error, status, details);
+};

@@ -88,8 +88,13 @@ export async function initializeSchema(): Promise<void> {
       CREATE TABLE IF NOT EXISTS user_alerts (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        type VARCHAR(50) NOT NULL,
-        settings JSONB NOT NULL,
+        asset_id VARCHAR(255) NOT NULL,
+        asset_type VARCHAR(50) NOT NULL,
+        condition VARCHAR(20) NOT NULL,
+        target_price DECIMAL(18,8) NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        type VARCHAR(50) NOT NULL DEFAULT 'price',
+        settings JSONB,
         active BOOLEAN DEFAULT true,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

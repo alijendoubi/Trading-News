@@ -1,6 +1,7 @@
 import { Pool } from 'pg';
 import { env } from './env.js';
 import { logger } from './logger.js';
+import { initializeSchema } from '../database/init.js';
 
 export const pool = new Pool({
   host: env.db.host,
@@ -52,6 +53,9 @@ export async function initializeDb(): Promise<void> {
   try {
     const result = await pool.query('SELECT NOW()');
     logger.info('Database connection successful', { timestamp: result.rows[0] });
+    
+    // Initialize database schema (create tables if they don't exist)
+    await initializeSchema();
   } catch (error) {
     logger.error('Failed to connect to database', { error });
     throw error;

@@ -71,4 +71,12 @@ export class NewsModel {
     );
     return this.rowToNews(result[0]);
   }
+
+  static async findByUrl(url: string): Promise<NewsArticle | null> {
+    const row = await queryDbSingle<NewsRow>(
+      'SELECT * FROM news_articles WHERE url = $1',
+      [url]
+    );
+    return row ? this.rowToNews(row) : null;
+  }
 }

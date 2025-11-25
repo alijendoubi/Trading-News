@@ -141,7 +141,7 @@ export const mockNews = [
     publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     category: 'Forex',
     summary: 'Fed officials suggest a pause in interest rate increases amid cooling inflation',
-    imageUrl: 'https://via.placeholder.com/400x300?text=Federal+Reserve',
+    imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop',
   },
   {
     id: '2',
@@ -151,7 +151,7 @@ export const mockNews = [
     publishedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
     category: 'Crypto',
     summary: 'Major cryptocurrency breaks through key technical level amid positive market sentiment',
-    imageUrl: 'https://via.placeholder.com/400x300?text=Bitcoin',
+    imageUrl: 'https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=400&h=300&fit=crop',
   },
   {
     id: '3',
@@ -161,7 +161,7 @@ export const mockNews = [
     publishedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
     category: 'Commodity',
     summary: 'Safe haven asset benefits from geopolitical tensions and market volatility',
-    imageUrl: 'https://via.placeholder.com/400x300?text=Gold',
+    imageUrl: 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=400&h=300&fit=crop',
   },
   {
     id: '4',
@@ -171,6 +171,6 @@ export const mockNews = [
     publishedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
     category: 'Forex',
     summary: 'European indices surge as ECB hints at potential rate cuts in 2024',
-    imageUrl: 'https://via.placeholder.com/400x300?text=Europe',
+    imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop',
   },
 ];

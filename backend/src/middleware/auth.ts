@@ -1,14 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
-import { HttpResponse } from '../utils/http-response.js';
+import { errorResponse } from '../utils/http-response.js';
 import { logger } from '../config/logger.js';
-import type { JwtPayload } from '../../../common/types.js';
+
+interface JwtPayload {
+  userId: number;
+  email: string;
+  type: string;
+}
 
 declare global {
   namespace Express {
     interface Request {
-      userId?: string;
+      userId?: number;
       userEmail?: string;
       user?: JwtPayload;
     }
@@ -20,7 +25,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      HttpResponse.unauthorized(res, 'Missing or invalid authorization header');
+      errorResponse(res, 'Missing or invalid authorization header', 401);
       return;
     }
 
@@ -28,22 +33,31 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 
     try {
       const decoded = jwt.verify(token, env.jwt.secret) as JwtPayload;
-      req.userId = decoded.sub;
+      
+      if (decoded.type !== 'access') {
+        errorResponse(res, 'Invalid token type', 401);
+        return;
+      }
+      
+      req.userId = decoded.userId;
       req.userEmail = decoded.email;
       req.user = decoded;
       next();
     } catch (error) {
       if (error instanceof jwt.TokenExpiredError) {
-        HttpResponse.unauthorized(res, 'Token has expired');
+        errorResponse(res, 'Token has expired', 401);
         return;
       }
-      HttpResponse.unauthorized(res, 'Invalid token');
+      errorResponse(res, 'Invalid token', 401);
     }
   } catch (error) {
     logger.error('Auth middleware error', { error });
-    HttpResponse.internalError(res);
+    errorResponse(res, 'Internal server error', 500);
   }
 }
+
+// Alias for consistency
+export const authenticate = authMiddleware;
 
 export function optionalAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
   try {
@@ -53,9 +67,12 @@ export function optionalAuthMiddleware(req: Request, res: Response, next: NextFu
       const token = authHeader.substring(7);
       try {
         const decoded = jwt.verify(token, env.jwt.secret) as JwtPayload;
-        req.userId = decoded.sub;
-        req.userEmail = decoded.email;
-        req.user = decoded;
+        
+        if (decoded.type === 'access') {
+          req.userId = decoded.userId;
+          req.userEmail = decoded.email;
+          req.user = decoded;
+        }
       } catch (error) {
         logger.warn('Optional auth token invalid', { error });
       }
@@ -64,6 +81,6 @@ export function optionalAuthMiddleware(req: Request, res: Response, next: NextFu
     next();
   } catch (error) {
     logger.error('Optional auth middleware error', { error });
-    HttpResponse.internalError(res);
+    errorResponse(res, 'Internal server error', 500);
   }
 }

@@ -7,9 +7,14 @@ import { initializeDb, closeDb } from './config/db.js';
 import { logger } from './config/logger.js';
 import { authMiddleware, optionalAuthMiddleware } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
+import { startCronJobs } from './cron/scheduler.js';
+import authRoutes from './routes/auth.routes.js';
 import eventsRoutes from './routes/events.routes.js';
 import marketsRoutes from './routes/markets.routes.js';
 import newsRoutes from './routes/news.routes.js';
+import watchlistsRoutes from './routes/watchlists.routes.js';
+import alertsRoutes from './routes/alerts.routes.js';
+import indicatorsRoutes from './routes/indicators.routes.js';
 
 const app: Express = express();
 
@@ -51,9 +56,13 @@ app.get('/health', (_req, res) => {
 });
 
 // API routes
+app.use('/api/auth', authRoutes);
 app.use('/api/events', optionalAuthMiddleware, eventsRoutes);
 app.use('/api/markets', optionalAuthMiddleware, marketsRoutes);
 app.use('/api/news', optionalAuthMiddleware, newsRoutes);
+app.use('/api/indicators', optionalAuthMiddleware, indicatorsRoutes);
+app.use('/api/watchlists', watchlistsRoutes);
+app.use('/api/alerts', alertsRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
@@ -81,9 +90,18 @@ async function start(): Promise<void> {
   try {
     try {
       await initializeDb();
+      logger.info('Database connected successfully');
     } catch (dbError) {
-      logger.warn('Database connection failed, running in mock mode', { dbError });
+      logger.warn('Database connection failed, running in API-only mode (no database)', { dbError });
     }
+    
+    // Start cron jobs (they will handle errors gracefully)
+    try {
+      startCronJobs();
+    } catch (cronError) {
+      logger.warn('Cron jobs failed to start, continuing without background tasks', { cronError });
+    }
+    
     app.listen(env.port, () => {
       logger.info(`Server running on port ${env.port} in ${env.node_env} mode`);
     });

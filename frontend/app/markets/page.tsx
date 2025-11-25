@@ -1,129 +1,253 @@
 'use client';
-import { useState, useEffect } from 'react';
-import apiClient from '@/lib/apiClient';
 
-interface Asset {
+import { useState, useMemo } from 'react';
+import { usePolling } from '@/lib/usePolling';
+import apiClient from '@/lib/apiClient';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PriceChange } from '@/components/ui/PriceChange';
+import { RefreshCw, Search, TrendingUp } from 'lucide-react';
+
+interface MarketData {
   id: string;
   symbol: string;
-  type: string;
   name: string;
-  lastPrice: number;
-  change: number;
-  changeAmount: number;
-  high24h?: number;
-  low24h?: number;
-  volume?: number;
+  currentPrice: number;
+  change24h: number;
+  volume24h: number;
+  marketCap: number;
+  type?: string;
 }
 
 export default function MarketsPage() {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'price' | 'change' | 'volume' | 'marketCap'>('marketCap');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  const { data, loading, error, refetch } = usePolling<{ data: MarketData[] }>(
+    async () => {
+      const response = await apiClient.get('/api/markets');
+      return response.data;
+    },
+    30000,
+    true
+  );
 
-  useEffect(() => {
-    const fetchAssets = async () => {
-      try {
-        const response = await apiClient.get('/api/markets/assets');
-        setAssets(response.data.data?.data || response.data.data || []);
-      } catch (error) {
-        console.error('Error fetching assets:', error);
-      } finally {
-        setLoading(false);
+  const markets = data?.data || [];
+  
+  // Filter and sort logic
+  const filteredMarkets = useMemo(() => {
+    let filtered = markets.filter(market => {
+      const matchesSearch = market.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                           market.symbol.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = selectedType === 'all' || market.type === selectedType;
+      return matchesSearch && matchesType;
+    });
+    
+    // Sort
+    filtered.sort((a, b) => {
+      let aVal, bVal;
+      switch(sortBy) {
+        case 'name': aVal = a.name; bVal = b.name; break;
+        case 'price': aVal = a.currentPrice; bVal = b.currentPrice; break;
+        case 'change': aVal = a.change24h; bVal = b.change24h; break;
+        case 'volume': aVal = a.volume24h; bVal = b.volume24h; break;
+        case 'marketCap': aVal = a.marketCap; bVal = b.marketCap; break;
+        default: return 0;
       }
-    };
-    fetchAssets();
-  }, []);
+      
+      if (typeof aVal === 'string') {
+        return sortOrder === 'asc' ? aVal.localeCompare(bVal as string) : (bVal as string).localeCompare(aVal);
+      }
+      return sortOrder === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+    });
+    
+    return filtered;
+  }, [markets, searchQuery, selectedType, sortBy, sortOrder]);
+  
+  const marketTypes = ['all', ...new Set(markets.map(m => m.type).filter(Boolean))];
+  
+  if (loading && !data) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
-  const filteredAssets = assets.filter(asset => {
-    const matchesSearch = asset.symbol.toLowerCase().includes(search.toLowerCase()) ||
-                         asset.name.toLowerCase().includes(search.toLowerCase());
-    const matchesType = filter === 'all' || asset.type === filter;
-    return matchesSearch && matchesType;
-  });
-
-  const getTypeIcon = (type: string) => {
-    switch(type) {
-      case 'forex': return '💱';
-      case 'crypto': return '₿';
-      case 'commodity': return '🛢️';
-      case 'index': return '📈';
-      default: return '📊';
-    }
-  };
-
-  const assetTypes = ['all', ...new Set(assets.map(a => a.type))];
+  if (error) {
+    return (
+      <Card>
+        <div className="text-center py-8">
+          <p className="text-danger mb-4">Failed to load market data: {error.message}</p>
+          <Button onClick={refetch} variant="primary">
+            Retry
+          </Button>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div>
-      <h1 className="text-4xl font-bold mb-8">📊 Live Markets</h1>
-      
-      <div className="mb-6 flex gap-4 flex-wrap">
-        <input
-          type="text"
-          placeholder="Search by symbol or name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {assetTypes.map(type => (
-            <option key={type} value={type}>
-              {type === 'all' ? 'All Markets' : type.charAt(0).toUpperCase() + type.slice(1)}
-            </option>
-          ))}
-        </select>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-zinc-100 flex items-center gap-3">
+            <TrendingUp className="w-10 h-10 text-primary" />
+            Live Market Data
+          </h1>
+          <p className="text-zinc-400 mt-2">Real-time prices and market analytics</p>
+        </div>
+        <Button onClick={refetch} variant="secondary" disabled={loading}>
+          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
-      {loading ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Loading market data...</p>
+      {/* Filters */}
+      <Card className="mb-6">
+        <div className="flex flex-wrap gap-4">
+          {/* Search */}
+          <div className="flex-1 min-w-[200px] relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search markets..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          
+          {/* Type Filter */}
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            {marketTypes.map(type => (
+              <option key={type} value={type}>
+                {type === 'all' ? 'All Types' : (type || '').toUpperCase()}
+              </option>
+            ))}
+          </select>
+          
+          {/* Sort */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="marketCap">Market Cap</option>
+            <option value="name">Name</option>
+            <option value="price">Price</option>
+            <option value="change">24h Change</option>
+            <option value="volume">Volume</option>
+          </select>
+          
+          <Button
+            variant="ghost"
+            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+          >
+            {sortOrder === 'asc' ? '↑' : '↓'}
+          </Button>
         </div>
-      ) : filteredAssets.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredAssets.map((asset) => (
-            <div key={asset.id} className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="font-bold text-lg">{getTypeIcon(asset.type)} {asset.symbol}</h3>
-                  <p className="text-sm text-gray-600">{asset.name}</p>
-                </div>
-                <span className={`text-xs px-2 py-1 rounded ${asset.type === 'forex' ? 'bg-blue-100 text-blue-800' : asset.type === 'crypto' ? 'bg-orange-100 text-orange-800' : asset.type === 'commodity' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800'}`}>
-                  {asset.type}
-                </span>
-              </div>
-              <div className="mb-3">
-                <p className="text-2xl font-bold">${asset.lastPrice.toFixed(2)}</p>
-              </div>
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className={`font-semibold ${asset.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {asset.change >= 0 ? '+' : ''}{asset.change.toFixed(2)}%
-                  </p>
-                  <p className="text-xs text-gray-500">${asset.changeAmount.toFixed(2)}</p>
-                </div>
-                <button className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition">
-                  Watch
-                </button>
-              </div>
-              {asset.high24h && asset.low24h && (
-                <div className="mt-3 pt-3 border-t text-xs text-gray-600">
-                  <p>24h High: ${asset.high24h.toFixed(2)}</p>
-                  <p>24h Low: ${asset.low24h.toFixed(2)}</p>
-                </div>
+      </Card>
+
+      {/* Market Stats */}
+      <div className="grid md:grid-cols-3 gap-4 mb-6">
+        <Card hover>
+          <div className="text-sm text-zinc-400 mb-1">Total Markets</div>
+          <div className="text-2xl font-bold text-zinc-100">{markets.length}</div>
+        </Card>
+        <Card hover>
+          <div className="text-sm text-zinc-400 mb-1">Gainers</div>
+          <div className="text-2xl font-bold text-success">
+            {markets.filter(m => m.change24h > 0).length}
+          </div>
+        </Card>
+        <Card hover>
+          <div className="text-sm text-zinc-400 mb-1">Losers</div>
+          <div className="text-2xl font-bold text-danger">
+            {markets.filter(m => m.change24h < 0).length}
+          </div>
+        </Card>
+      </div>
+
+      {/* Markets Table */}
+      <Card>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-zinc-800">
+                <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  Asset
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  Price
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  24h Change
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  24h Volume
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                  Market Cap
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-800">
+              {filteredMarkets.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-zinc-400">
+                    No markets found matching your criteria
+                  </td>
+                </tr>
+              ) : (
+                filteredMarkets.map((market) => (
+                  <tr key={market.id} className="hover:bg-zinc-800/50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-zinc-100">{market.name}</div>
+                          <div className="text-xs text-zinc-400">{market.symbol}</div>
+                        </div>
+                        {market.type && (
+                          <Badge variant="default">{market.type}</Badge>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <span className="text-price-md font-mono text-zinc-100">
+                        ${market.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                      <PriceChange value={market.change24h} showIcon />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-zinc-300 font-mono">
+                      ${market.volume24h.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-zinc-300 font-mono">
+                      ${market.marketCap.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                    </td>
+                  </tr>
+                ))
               )}
-            </div>
-          ))}
+            </tbody>
+          </table>
         </div>
-      ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500">No assets found matching your criteria</p>
-        </div>
-      )}
+      </Card>
+      
+      {/* Auto-refresh indicator */}
+      <div className="mt-4 text-center text-sm text-zinc-500">
+        Auto-refreshes every 30 seconds
+      </div>
     </div>
   );
 }

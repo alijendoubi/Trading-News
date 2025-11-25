@@ -124,4 +124,12 @@ export class EventModel {
     );
     return result.length;
   }
+
+  static async findByTitleAndDate(title: string, date: Date): Promise<EconomicEvent | null> {
+    const row = await queryDbSingle<EventRow>(
+      'SELECT * FROM economic_events WHERE title = $1 AND event_date = $2',
+      [title, date]
+    );
+    return row ? this.rowToEvent(row) : null;
+  }
 }
