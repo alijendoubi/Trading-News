@@ -62,6 +62,28 @@ All pages now use consistent Tailwind breakpoints:
 - Responsive heading sizes
 - Stacked "Remember me" / "Forgot password" on mobile
 
+#### Watchlist Page (`/watchlist`)
+- **Form Layout**: Full-width inputs on mobile, inline on desktop
+- **Asset Cards**: Stacked layout with full-width buttons
+- **Responsive Text**: Smaller fonts for mobile readability
+
+#### Alerts Page (`/alerts`)
+- **Create Form**: Single column on mobile, 2-col grid on desktop
+- **Alert Cards**: Stacked content with full-width action buttons
+- **Labels**: Smaller text sizes for better mobile fit
+
+#### Forum Page (`/forum`)
+- **Header**: Stacked with full-width button on mobile
+- **Categories**: 2-col grid on mobile, 4-col on desktop
+- **Thread Cards**: Stacked metadata, smaller badges
+- **Touch-friendly**: Improved tap targets for all interactive elements
+
+#### Brokers Page (`/brokers`)
+- **Broker Cards**: Stacked layout on mobile with centered logo
+- **Stats Grid**: 2-col on mobile, 4-col on desktop
+- **Rating Display**: Responsive star sizing
+- **Content**: Responsive text and spacing throughout
+
 ## Mobile-First Improvements
 
 ### Touch-Friendly
