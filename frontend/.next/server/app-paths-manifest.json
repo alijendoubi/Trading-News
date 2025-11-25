@@ -1,6 +1,1 @@
-{
-  "/news/page": "app/news/page.js",
-  "/calendar/page": "app/calendar/page.js",
-  "/markets/page": "app/markets/page.js",
-  "/register/page": "app/register/page.js"
-}
+{}
