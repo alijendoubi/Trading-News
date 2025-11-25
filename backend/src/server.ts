@@ -27,7 +27,11 @@ app.use(helmet());
 // CORS configuration
 app.use(
   cors({
-    origin: env.isDevelopment ? '*' : [env.api_base_url],
+    origin: env.isDevelopment ? '*' : [
+      'https://trading-o6t9x2bp1-alijendoubis-projects.vercel.app',
+      'https://trading-b8uoyqk4v-alijendoubis-projects.vercel.app',
+      /.*\.vercel\.app$/,  // Allow all Vercel preview deployments
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
