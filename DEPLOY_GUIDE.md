@@ -45,10 +45,13 @@ Region: Oregon (US West) [or closest to your users]
 Branch: main
 Root Directory: backend
 Runtime: Node
+Node Version: 20 (IMPORTANT: Select Node 20 or higher)
 Build Command: npm install && npm run build
 Start Command: npm start
 Instance Type: Free
 ```
+
+**Important:** Make sure to select **Node 20** or higher in the Node Version dropdown. Firebase requires Node 20+.
 
 #### Step 4: Add Environment Variables
 Click **"Advanced"** → **"Add Environment Variable"**
