@@ -50,15 +50,15 @@ export default function RegisterPage() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-success to-emerald-500 flex items-center justify-center">
-              <TrendingUp className="w-8 h-8 text-white" />
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-success to-emerald-500 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
           </div>
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-zinc-100 to-zinc-400 bg-clip-text text-transparent">
             Join TradingHub
           </h2>
-          <p className="mt-3 text-zinc-400">
+          <p className="mt-2 sm:mt-3 text-sm sm:text-base text-zinc-400">
             Start your trading intelligence journey today
           </p>
         </div>

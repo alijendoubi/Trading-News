@@ -37,15 +37,15 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center">
-              <TrendingUp className="w-8 h-8 text-white" />
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-primary to-cyan-500 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
           </div>
-          <h2 className="text-4xl font-bold bg-gradient-to-r from-zinc-100 to-zinc-400 bg-clip-text text-transparent">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-zinc-100 to-zinc-400 bg-clip-text text-transparent">
             Welcome Back
           </h2>
-          <p className="mt-3 text-zinc-400">
+          <p className="mt-2 sm:mt-3 text-sm sm:text-base text-zinc-400">
             Sign in to access your trading dashboard
           </p>
         </div>
@@ -100,7 +100,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -108,12 +108,12 @@ export default function LoginPage() {
                   type="checkbox"
                   className="h-4 w-4 rounded border-zinc-700 bg-zinc-800 text-primary focus:ring-primary focus:ring-offset-zinc-900"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-zinc-400">
+                <label htmlFor="remember-me" className="ml-2 block text-xs sm:text-sm text-zinc-400">
                   Remember me
                 </label>
               </div>
 
-              <div className="text-sm">
+              <div className="text-xs sm:text-sm">
                 <Link href="/forgot-password" className="font-medium text-primary hover:text-primary/80 transition-colors">
                   Forgot password?
                 </Link>

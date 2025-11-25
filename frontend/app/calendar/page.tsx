@@ -72,18 +72,18 @@ export default function CalendarPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-zinc-100 flex items-center gap-3">
-          <CalendarIcon className="w-10 h-10 text-primary" />
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-zinc-100 flex items-center gap-2 sm:gap-3">
+          <CalendarIcon className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
           Economic Calendar
         </h1>
-        <p className="text-zinc-400 mt-2">Track high-impact economic events and market-moving data</p>
+        <p className="text-sm sm:text-base text-zinc-400 mt-1 sm:mt-2">Track high-impact economic events and market-moving data</p>
       </div>
       
       {/* Filters */}
-      <Card className="mb-6">
-        <div className="flex gap-4 flex-wrap">
-          <div className="flex-1 min-w-[200px] relative">
+      <Card className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap">
+          <div className="flex-1 min-w-full sm:min-w-[200px] relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-500" />
             <input
               type="text"
@@ -96,7 +96,7 @@ export default function CalendarPage() {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full sm:w-auto px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
           >
             <option value="all">All Impact</option>
             <option value="High">High Impact</option>
@@ -107,20 +107,20 @@ export default function CalendarPage() {
       </Card>
 
       {/* Events Stats */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <Card hover>
-          <div className="text-sm text-zinc-400 mb-1">Total Events</div>
-          <div className="text-2xl font-bold text-zinc-100">{events.length}</div>
+          <div className="text-xs sm:text-sm text-zinc-400 mb-1">Total Events</div>
+          <div className="text-xl sm:text-2xl font-bold text-zinc-100">{events.length}</div>
         </Card>
         <Card hover>
-          <div className="text-sm text-zinc-400 mb-1">High Impact</div>
-          <div className="text-2xl font-bold text-danger">
+          <div className="text-xs sm:text-sm text-zinc-400 mb-1">High Impact</div>
+          <div className="text-xl sm:text-2xl font-bold text-danger">
             {events.filter(e => e.impact === 'High').length}
           </div>
         </Card>
         <Card hover>
-          <div className="text-sm text-zinc-400 mb-1">This Week</div>
-          <div className="text-2xl font-bold text-primary">
+          <div className="text-xs sm:text-sm text-zinc-400 mb-1">This Week</div>
+          <div className="text-xl sm:text-2xl font-bold text-primary">
             {filteredEvents.length}
           </div>
         </Card>
@@ -133,50 +133,50 @@ export default function CalendarPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-zinc-800">
-                  <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Date & Time</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Event</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Country</th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Impact</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">Forecast</th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">Previous</th>
-                  <th className="px-6 py-4 text-center text-xs font-medium text-zinc-400 uppercase tracking-wider">Trend</th>
+                  <th className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Date</th>
+                  <th className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Event</th>
+                  <th className="hidden sm:table-cell px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Country</th>
+                  <th className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-left text-xs font-medium text-zinc-400 uppercase tracking-wider">Impact</th>
+                  <th className="hidden md:table-cell px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">Forecast</th>
+                  <th className="hidden md:table-cell px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-right text-xs font-medium text-zinc-400 uppercase tracking-wider">Previous</th>
+                  <th className="hidden lg:table-cell px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-center text-xs font-medium text-zinc-400 uppercase tracking-wider">Trend</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800">
                 {filteredEvents.map((event) => (
                   <tr key={event.id} className="hover:bg-zinc-800/50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-zinc-100">
-                        {format(new Date(event.date), 'MMM dd, yyyy')}
+                    <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                      <div className="text-xs sm:text-sm font-medium text-zinc-100">
+                        {format(new Date(event.date), 'MMM dd')}
                       </div>
                       <div className="text-xs text-zinc-400">
                         {format(new Date(event.date), 'HH:mm')}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-zinc-100 max-w-xs">
+                    <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                      <div className="text-xs sm:text-sm font-semibold text-zinc-100 max-w-[200px] sm:max-w-xs">
                         {event.title}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-zinc-300">{event.country}</span>
+                    <td className="hidden sm:table-cell px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <span className="text-xs sm:text-sm text-zinc-300">{event.country}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge variant={getImpactVariant(event.impact)}>
+                    <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
+                      <Badge variant={getImpactVariant(event.impact)} className="text-xs">
                         {event.impact}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-mono text-zinc-300">
+                    <td className="hidden md:table-cell px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
+                      <span className="text-xs sm:text-sm font-mono text-zinc-300">
                         {event.forecast ?? 'N/A'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <span className="text-sm font-mono text-zinc-300">
+                    <td className="hidden md:table-cell px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-right">
+                      <span className="text-xs sm:text-sm font-mono text-zinc-300">
                         {event.previous ?? 'N/A'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="hidden lg:table-cell px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap text-center">
                       {renderComparisonIcon(event.forecast, event.previous)}
                     </td>
                   </tr>

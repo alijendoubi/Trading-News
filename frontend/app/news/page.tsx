@@ -70,18 +70,18 @@ export default function NewsPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-zinc-100 flex items-center gap-3">
-          <Newspaper className="w-10 h-10 text-primary" />
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-zinc-100 flex items-center gap-2 sm:gap-3">
+          <Newspaper className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
           Financial News
         </h1>
-        <p className="text-zinc-400 mt-2">Latest market news and analysis from top sources</p>
+        <p className="text-sm sm:text-base text-zinc-400 mt-1 sm:mt-2">Latest market news and analysis from top sources</p>
       </div>
       
       {/* Filters */}
-      <Card className="mb-6">
-        <div className="flex gap-4 flex-wrap">
-          <div className="flex-1 min-w-[200px] relative">
+      <Card className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap">
+          <div className="flex-1 min-w-full sm:min-w-[200px] relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-500" />
             <input
               type="text"
@@ -94,7 +94,7 @@ export default function NewsPage() {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full sm:w-auto px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-primary text-sm"
           >
             {categories.map(cat => (
               <option key={cat} value={cat}>
@@ -106,18 +106,18 @@ export default function NewsPage() {
       </Card>
 
       {/* News Stats */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <Card hover>
-          <div className="text-sm text-zinc-400 mb-1">Total Articles</div>
-          <div className="text-2xl font-bold text-zinc-100">{articles.length}</div>
+          <div className="text-xs sm:text-sm text-zinc-400 mb-1">Total Articles</div>
+          <div className="text-xl sm:text-2xl font-bold text-zinc-100">{articles.length}</div>
         </Card>
         <Card hover>
-          <div className="text-sm text-zinc-400 mb-1">Categories</div>
-          <div className="text-2xl font-bold text-primary">{categories.length - 1}</div>
+          <div className="text-xs sm:text-sm text-zinc-400 mb-1">Categories</div>
+          <div className="text-xl sm:text-2xl font-bold text-primary">{categories.length - 1}</div>
         </Card>
         <Card hover>
-          <div className="text-sm text-zinc-400 mb-1">Latest Update</div>
-          <div className="text-2xl font-bold text-success">
+          <div className="text-xs sm:text-sm text-zinc-400 mb-1">Latest Update</div>
+          <div className="text-xl sm:text-2xl font-bold text-success">
             {articles.length > 0 ? formatDate(articles[0].publishedAt) : 'N/A'}
           </div>
         </Card>
@@ -125,12 +125,12 @@ export default function NewsPage() {
 
       {/* News Articles */}
       {filteredArticles.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {filteredArticles.map((article) => (
             <Card key={article.id} hover className="overflow-hidden">
-              <div className="flex gap-6">
+              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                 {article.imageUrl && (
-                  <div className="w-48 h-32 flex-shrink-0 overflow-hidden rounded-lg">
+                  <div className="w-full sm:w-48 h-48 sm:h-32 flex-shrink-0 overflow-hidden rounded-lg">
                     <img 
                       src={article.imageUrl} 
                       alt={article.title} 
@@ -139,21 +139,21 @@ export default function NewsPage() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0 py-2">
-                  <div className="flex items-start justify-between mb-3 gap-4">
-                    <h3 className="text-xl font-bold text-zinc-100 leading-tight flex-1">
+                  <div className="flex flex-col sm:flex-row items-start justify-between mb-3 gap-2 sm:gap-4">
+                    <h3 className="text-base sm:text-lg lg:text-xl font-bold text-zinc-100 leading-tight flex-1">
                       {article.title}
                     </h3>
-                    <Badge variant="info">{article.category}</Badge>
+                    <Badge variant="info" className="text-xs">{article.category}</Badge>
                   </div>
                   {article.summary && (
-                    <p className="text-sm text-zinc-400 mb-4 line-clamp-2">{article.summary}</p>
+                    <p className="text-xs sm:text-sm text-zinc-400 mb-3 sm:mb-4 line-clamp-2">{article.summary}</p>
                   )}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-sm text-zinc-500">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-zinc-500">
                       <span className="font-semibold text-zinc-300">{article.source}</span>
-                      <span>•</span>
+                      <span className="hidden sm:inline">•</span>
                       <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
+                        <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span>{formatDate(article.publishedAt)}</span>
                       </div>
                     </div>
@@ -161,10 +161,10 @@ export default function NewsPage() {
                       href={article.url} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="flex items-center gap-2 text-primary hover:text-primary-light text-sm font-semibold transition-colors"
+                      className="flex items-center gap-2 text-primary hover:text-primary-light text-xs sm:text-sm font-semibold transition-colors"
                     >
                       Read More
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
                     </a>
                   </div>
                 </div>
