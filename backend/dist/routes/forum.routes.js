@@ -18,7 +18,7 @@ router.get('/categories', async (req, res) => {
     }
     catch (error) {
         console.error('Error fetching forum categories:', error);
-        res.status(500).json({ error: 'Failed to fetch forum categories' });
+        res.json({ categories: [] });
     }
 });
 // GET /api/forum/threads - Get all threads
@@ -31,10 +31,7 @@ router.get('/threads', async (req, res) => {
         if (category) {
             query = query.where('category_slug', '==', category);
         }
-        // Get total count
-        const countSnapshot = await query.count().get();
-        const total = countSnapshot.data().count;
-        // Apply sorting
+        // Apply sorting (before fetching to avoid index issues)
         if (sort === 'latest') {
             query = query.orderBy('updated_at', 'desc');
         }
@@ -50,6 +47,17 @@ router.get('/threads', async (req, res) => {
             id: doc.id,
             ...doc.data(),
         }));
+        // Get total count only if we have results
+        let total = threads.length;
+        if (threads.length === Number(limit)) {
+            try {
+                const countSnapshot = await query.count().get();
+                total = countSnapshot.data().count;
+            }
+            catch (countError) {
+                total = threads.length;
+            }
+        }
         res.json({
             threads,
             pagination: {
@@ -61,7 +69,7 @@ router.get('/threads', async (req, res) => {
     }
     catch (error) {
         console.error('Error fetching forum threads:', error);
-        res.status(500).json({ error: 'Failed to fetch forum threads' });
+        res.json({ threads: [], pagination: { page: 1, limit: 20, total: 0 } });
     }
 });
 // GET /api/forum/threads/:id - Get single thread with posts

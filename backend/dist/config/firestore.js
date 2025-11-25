@@ -1,4 +1,3 @@
-import admin from 'firebase-admin';
 import { getFirestore } from './firebase.js';
 import { logger } from './logger.js';
 /**
@@ -70,10 +69,11 @@ export async function createDocument(collectionName, data, customId) {
     try {
         const db = getDb();
         const collectionRef = db.collection(collectionName);
+        const now = new Date();
         const docData = {
             ...data,
-            created_at: admin.firestore.FieldValue.serverTimestamp(),
-            updated_at: admin.firestore.FieldValue.serverTimestamp(),
+            created_at: now,
+            updated_at: now,
         };
         let docRef;
         if (customId) {
@@ -83,10 +83,9 @@ export async function createDocument(collectionName, data, customId) {
         else {
             docRef = await collectionRef.add(docData);
         }
-        const doc = await docRef.get();
         return {
-            id: doc.id,
-            ...doc.data(),
+            id: docRef.id,
+            ...docData,
         };
     }
     catch (error) {
@@ -103,10 +102,13 @@ export async function updateDocument(collectionName, docId, data) {
         const docRef = db.collection(collectionName).doc(docId);
         const updateData = {
             ...data,
-            updated_at: admin.firestore.FieldValue.serverTimestamp(),
+            updated_at: new Date(),
         };
         await docRef.update(updateData);
         const doc = await docRef.get();
+        if (!doc.exists) {
+            throw new Error('Document not found');
+        }
         return {
             id: doc.id,
             ...doc.data(),

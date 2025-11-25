@@ -1,14 +1,19 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Load .env.local from parent directory (project root)
-dotenv.config({ path: path.join(process.cwd(), '..', '.env.local') });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from backend directory
+const envPath = path.join(__dirname, '..', '..', '.env');
+dotenv.config({ path: envPath });
 
 export const env = {
   // Application
   node_env: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '5000', 10),
-  api_base_url: process.env.API_BASE_URL || 'http://localhost:5000',
+  port: parseInt(process.env.PORT || '3001', 10),
+  api_base_url: process.env.API_BASE_URL || 'http://localhost:3001',
 
   // JWT
   JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-key',

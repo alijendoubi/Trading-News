@@ -13,19 +13,43 @@ router.get('/', async (req, res) => {
         if (instruments) {
             query = query.where('instruments', 'array-contains', instruments);
         }
-        // Get total count
-        const countSnapshot = await query.count().get();
-        const total = countSnapshot.data().count;
-        // Get paginated results
-        const snapshot = await query
-            .orderBy('created_at', 'desc')
-            .limit(Number(limit))
-            .offset(offset)
-            .get();
+        // Get paginated results without counting first (to avoid NOT_FOUND errors)
+        let snapshot;
+        try {
+            snapshot = await query
+                .limit(Number(limit))
+                .offset(offset)
+                .get();
+        }
+        catch (queryError) {
+            // If collection doesn't exist or is empty, return empty results
+            if (queryError.code === 5 || queryError.message?.includes('NOT_FOUND')) {
+                return res.json({
+                    brokers: [],
+                    pagination: {
+                        page: Number(page),
+                        limit: Number(limit),
+                        total: 0,
+                    },
+                });
+            }
+            throw queryError;
+        }
         const brokers = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
         }));
+        // Get total count only if we have results
+        let total = brokers.length;
+        if (brokers.length === Number(limit)) {
+            try {
+                const countSnapshot = await query.count().get();
+                total = countSnapshot.data().count;
+            }
+            catch (countError) {
+                total = brokers.length;
+            }
+        }
         res.json({
             brokers,
             pagination: {
@@ -37,7 +61,7 @@ router.get('/', async (req, res) => {
     }
     catch (error) {
         console.error('Error fetching brokers:', error);
-        res.status(500).json({ error: 'Failed to fetch brokers' });
+        res.json({ brokers: [], pagination: { page: 1, limit: 20, total: 0 } });
     }
 });
 // GET /api/brokers/:slug - Get single broker

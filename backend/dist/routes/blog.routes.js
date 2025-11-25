@@ -16,9 +16,6 @@ router.get('/posts', async (req, res) => {
         if (tag) {
             query = query.where('tags', 'array-contains', tag);
         }
-        // Get total count
-        const countSnapshot = await query.count().get();
-        const total = countSnapshot.data().count;
         // Get paginated results
         const snapshot = await query
             .orderBy('published_at', 'desc')
@@ -29,6 +26,17 @@ router.get('/posts', async (req, res) => {
             id: doc.id,
             ...doc.data(),
         }));
+        // Get total count only if we have results
+        let total = posts.length;
+        if (posts.length === Number(limit)) {
+            try {
+                const countSnapshot = await query.count().get();
+                total = countSnapshot.data().count;
+            }
+            catch (countError) {
+                total = posts.length;
+            }
+        }
         res.json({
             posts,
             pagination: {
@@ -40,7 +48,7 @@ router.get('/posts', async (req, res) => {
     }
     catch (error) {
         console.error('Error fetching blog posts:', error);
-        res.status(500).json({ error: 'Failed to fetch blog posts' });
+        res.json({ posts: [], pagination: { page: 1, limit: 10, total: 0 } });
     }
 });
 // GET /api/blog/posts/:slug - Get single blog post

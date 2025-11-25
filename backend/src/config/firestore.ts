@@ -88,10 +88,11 @@ export async function createDocument<T>(
     const db = getDb();
     const collectionRef = db.collection(collectionName);
     
+    const now = new Date();
     const docData = {
       ...data,
-      created_at: admin.firestore.FieldValue.serverTimestamp(),
-      updated_at: admin.firestore.FieldValue.serverTimestamp(),
+      created_at: now,
+      updated_at: now,
     };
 
     let docRef: admin.firestore.DocumentReference;
@@ -102,10 +103,9 @@ export async function createDocument<T>(
       docRef = await collectionRef.add(docData);
     }
 
-    const doc = await docRef.get();
     return {
-      id: doc.id,
-      ...doc.data(),
+      id: docRef.id,
+      ...docData,
     } as T;
   } catch (error) {
     logger.error('Firestore create document error', { error, collection: collectionName });
@@ -127,11 +127,15 @@ export async function updateDocument<T>(
 
     const updateData = {
       ...data,
-      updated_at: admin.firestore.FieldValue.serverTimestamp(),
+      updated_at: new Date(),
     };
 
     await docRef.update(updateData);
     const doc = await docRef.get();
+
+    if (!doc.exists) {
+      throw new Error('Document not found');
+    }
 
     return {
       id: doc.id,
