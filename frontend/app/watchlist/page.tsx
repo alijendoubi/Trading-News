@@ -77,9 +77,9 @@ export default function WatchlistPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">My Watchlist</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8">My Watchlist</h1>
 
         {error && (
           <div className="mb-6 bg-red-900/50 border border-red-700 rounded-lg p-4">
@@ -87,16 +87,16 @@ export default function WatchlistPage() {
           </div>
         )}
 
-        <div className="bg-gray-800 rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Add Asset</h2>
-          <form onSubmit={handleAdd} className="flex gap-4 flex-wrap">
+        <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Add Asset</h2>
+          <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3 sm:gap-4 flex-wrap">
             <input
               type="text"
               placeholder="Asset ID (e.g., bitcoin, AAPL)"
               value={newAssetId}
               onChange={(e) => setNewAssetId(e.target.value)}
               required
-              className="flex-1 min-w-[200px] px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 min-w-full sm:min-w-[200px] px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             />
             <input
               type="text"
@@ -104,12 +104,12 @@ export default function WatchlistPage() {
               value={newAssetName}
               onChange={(e) => setNewAssetName(e.target.value)}
               required
-              className="flex-1 min-w-[200px] px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 min-w-full sm:min-w-[200px] px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             />
             <select
               value={newAssetType}
               onChange={(e) => setNewAssetType(e.target.value)}
-              className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full sm:w-auto px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             >
               <option value="crypto">Crypto</option>
               <option value="stock">Stock</option>
@@ -117,7 +117,7 @@ export default function WatchlistPage() {
             </select>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors text-sm sm:text-base"
             >
               Add
             </button>
@@ -133,21 +133,21 @@ export default function WatchlistPage() {
             watchlist.map((item) => (
               <div
                 key={item.assetId}
-                className="bg-gray-800 rounded-lg p-6 flex items-center justify-between hover:bg-gray-750 transition-colors"
+                className="bg-gray-800 rounded-lg p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-gray-750 transition-colors"
               >
-                <div>
-                  <h3 className="text-lg font-semibold">{item.assetName}</h3>
-                  <p className="text-sm text-gray-400">
+                <div className="flex-1">
+                  <h3 className="text-base sm:text-lg font-semibold">{item.assetName}</h3>
+                  <p className="text-xs sm:text-sm text-gray-400">
                     {item.assetType.toUpperCase()} • {item.assetId}
                   </p>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto">
                   {item.currentPrice && (
-                    <div className="text-right">
-                      <p className="text-xl font-bold">${item.currentPrice.toLocaleString()}</p>
+                    <div className="text-left sm:text-right flex-1 sm:flex-initial">
+                      <p className="text-lg sm:text-xl font-bold">${item.currentPrice.toLocaleString()}</p>
                       {item.change24h !== undefined && (
                         <p
-                          className={`text-sm ${
+                          className={`text-xs sm:text-sm ${
                             item.change24h >= 0 ? 'text-green-400' : 'text-red-400'
                           }`}
                         >
@@ -159,7 +159,7 @@ export default function WatchlistPage() {
                   )}
                   <button
                     onClick={() => handleRemove(item.assetId)}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
                   >
                     Remove
                   </button>

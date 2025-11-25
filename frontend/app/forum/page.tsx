@@ -86,32 +86,32 @@ export default function ForumPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-zinc-100">Trading Forum</h1>
-          <p className="text-zinc-400 mt-1">Discuss strategies, share insights, and learn from fellow traders</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">Trading Forum</h1>
+          <p className="text-sm sm:text-base text-zinc-400 mt-1">Discuss strategies, share insights, and learn from fellow traders</p>
         </div>
-        <Link href="/forum/new">
-          <Button variant="primary">
-            <Plus className="w-4 h-4 mr-2" />
-            New Thread
+        <Link href="/forum/new" className="w-full sm:w-auto">
+          <Button variant="primary" className="w-full sm:w-auto">
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="sm:inline">New Thread</span>
           </Button>
         </Link>
       </div>
 
       {/* Categories */}
-      <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card
           hover
           className={`cursor-pointer ${!selectedCategory ? 'ring-2 ring-primary' : ''}`}
           onClick={() => setSelectedCategory(null)}
         >
-          <div className="text-center">
-            <div className="text-2xl font-bold text-zinc-100">All</div>
-            <div className="text-sm text-zinc-500 mt-1">All Categories</div>
-          </div>
+            <div className="text-center">
+              <div className="text-xl sm:text-2xl font-bold text-zinc-100">All</div>
+              <div className="text-xs sm:text-sm text-zinc-500 mt-1">All Categories</div>
+            </div>
         </Card>
         
         {categories.map((cat) => (
@@ -121,10 +121,10 @@ export default function ForumPage() {
             className={`cursor-pointer ${selectedCategory === cat.slug ? 'ring-2 ring-primary' : ''}`}
             onClick={() => setSelectedCategory(cat.slug)}
           >
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-primary" />
-                <h3 className="font-semibold text-zinc-100">{cat.name}</h3>
+            <div className="space-y-1 sm:space-y-2">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                <h3 className="text-sm sm:text-base font-semibold text-zinc-100">{cat.name}</h3>
               </div>
               <p className="text-xs text-zinc-500">{cat.thread_count} threads</p>
             </div>
@@ -133,7 +133,7 @@ export default function ForumPage() {
       </div>
 
       {/* Sort Options */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           variant={sortBy === 'latest' ? 'primary' : 'secondary'}
           size="sm"
@@ -165,30 +165,30 @@ export default function ForumPage() {
           {threads.map((thread) => (
             <Card key={thread.id} hover>
               <Link href={`/forum/${thread.id}`}>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center flex-wrap gap-2 mb-2">
                         {thread.is_pinned && (
-                          <Badge variant="warning">Pinned</Badge>
+                          <Badge variant="warning" className="text-xs">Pinned</Badge>
                         )}
-                        <Badge variant="secondary">{thread.category_name}</Badge>
+                        <Badge variant="secondary" className="text-xs">{thread.category_name}</Badge>
                       </div>
-                      <h3 className="text-lg font-semibold text-zinc-100 hover:text-primary transition-colors">
+                      <h3 className="text-base sm:text-lg font-semibold text-zinc-100 hover:text-primary transition-colors">
                         {thread.title}
                       </h3>
-                      <p className="text-sm text-zinc-400 mt-1 line-clamp-2">{thread.content}</p>
+                      <p className="text-xs sm:text-sm text-zinc-400 mt-1 line-clamp-2">{thread.content}</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between text-sm text-zinc-500">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs sm:text-sm text-zinc-500">
+                    <div className="flex items-center flex-wrap gap-2 sm:gap-4">
                       <span>by {thread.author_name}</span>
-                      <span>•</span>
+                      <span className="hidden sm:inline">•</span>
                       <span>{formatDate(thread.created_at)}</span>
                     </div>
                     
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
                       <div className="flex items-center gap-1">
                         <Eye className="w-4 h-4" />
                         <span>{thread.views}</span>

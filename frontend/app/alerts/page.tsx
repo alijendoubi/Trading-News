@@ -91,13 +91,13 @@ export default function AlertsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Price Alerts</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold">Price Alerts</h1>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors"
+            className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-medium transition-colors text-sm sm:text-base"
           >
             {showForm ? 'Cancel' : 'Create Alert'}
           </button>
@@ -110,27 +110,27 @@ export default function AlertsPage() {
         )}
 
         {showForm && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">Create New Alert</h2>
+          <div className="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Create New Alert</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Asset ID</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-2">Asset ID</label>
                   <input
                     type="text"
                     placeholder="e.g., bitcoin, AAPL"
                     value={formData.assetId}
                     onChange={(e) => setFormData({ ...formData, assetId: e.target.value })}
                     required
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Asset Type</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-2">Asset Type</label>
                   <select
                     value={formData.assetType}
                     onChange={(e) => setFormData({ ...formData, assetType: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   >
                     <option value="crypto">Crypto</option>
                     <option value="stock">Stock</option>
@@ -138,20 +138,20 @@ export default function AlertsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Condition</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-2">Condition</label>
                   <select
                     value={formData.condition}
                     onChange={(e) =>
                       setFormData({ ...formData, condition: e.target.value as 'above' | 'below' })
                     }
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   >
                     <option value="above">Price goes above</option>
                     <option value="below">Price goes below</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Target Price</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-2">Target Price</label>
                   <input
                     type="number"
                     step="0.01"
@@ -159,7 +159,7 @@ export default function AlertsPage() {
                     value={formData.targetPrice}
                     onChange={(e) => setFormData({ ...formData, targetPrice: e.target.value })}
                     required
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   />
                 </div>
               </div>
@@ -182,11 +182,11 @@ export default function AlertsPage() {
             alerts.map((alert) => (
               <div
                 key={alert.id}
-                className="bg-gray-800 rounded-lg p-6 flex items-center justify-between hover:bg-gray-750 transition-colors"
+                className="bg-gray-800 rounded-lg p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-gray-750 transition-colors"
               >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold">{alert.assetId}</h3>
+                <div className="flex-1 w-full sm:w-auto">
+                  <div className="flex items-center flex-wrap gap-2 sm:gap-3 mb-2">
+                    <h3 className="text-base sm:text-lg font-semibold">{alert.assetId}</h3>
                     <span className="px-2 py-1 bg-gray-700 rounded text-xs">
                       {alert.assetType.toUpperCase()}
                     </span>
@@ -200,14 +200,14 @@ export default function AlertsPage() {
                       {alert.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </div>
-                  <p className="text-gray-400">
+                  <p className="text-sm sm:text-base text-gray-400">
                     Alert when price goes {alert.condition} ${alert.targetPrice.toLocaleString()}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                   <button
                     onClick={() => handleToggle(alert.id, alert.isActive)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                       alert.isActive
                         ? 'bg-yellow-600 hover:bg-yellow-700'
                         : 'bg-green-600 hover:bg-green-700'
@@ -217,7 +217,7 @@ export default function AlertsPage() {
                   </button>
                   <button
                     onClick={() => handleDelete(alert.id)}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-sm font-medium transition-colors"
+                    className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-xs sm:text-sm font-medium transition-colors"
                   >
                     Delete
                   </button>

@@ -56,11 +56,11 @@ export default function BrokersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-zinc-100">Forex & CFD Brokers</h1>
-        <p className="text-zinc-400 mt-1">Compare top-rated brokers and read trader reviews</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">Forex & CFD Brokers</h1>
+        <p className="text-sm sm:text-base text-zinc-400 mt-1">Compare top-rated brokers and read trader reviews</p>
       </div>
 
       {/* Brokers List */}
@@ -71,30 +71,30 @@ export default function BrokersPage() {
           {brokers.map((broker) => (
             <Card key={broker.id} hover>
               <Link href={`/brokers/${broker.slug}`}>
-                <div className="flex gap-6">
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                   {/* Logo */}
-                  <div className="flex-shrink-0 w-20 h-20 bg-zinc-800 rounded-lg flex items-center justify-center">
+                  <div className="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-zinc-800 rounded-lg flex items-center justify-center mx-auto sm:mx-0">
                     {broker.logo_url ? (
-                      <img src={broker.logo_url} alt={broker.name} className="w-16 h-16 object-contain" />
+                      <img src={broker.logo_url} alt={broker.name} className="w-12 h-12 sm:w-16 sm:h-16 object-contain" />
                     ) : (
-                      <Building2 className="w-8 h-8 text-zinc-600" />
+                      <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-600" />
                     )}
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-xl font-bold text-zinc-100 hover:text-primary transition-colors">
+                  <div className="flex-1 space-y-2 sm:space-y-3">
+                    <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <h3 className="text-lg sm:text-xl font-bold text-zinc-100 hover:text-primary transition-colors">
                           {broker.name}
                         </h3>
-                        <p className="text-sm text-zinc-500 mt-1">{broker.headquarters}</p>
+                        <p className="text-xs sm:text-sm text-zinc-500 mt-1">{broker.headquarters}</p>
                       </div>
                       
-                      <div className="text-right">
+                      <div className="text-left sm:text-right">
                         <div className="flex items-center gap-2">
                           {renderStars(parseFloat(broker.avg_rating.toString()))}
-                          <span className="text-lg font-bold text-zinc-100">
+                          <span className="text-base sm:text-lg font-bold text-zinc-100">
                             {parseFloat(broker.avg_rating.toString()).toFixed(1)}
                           </span>
                         </div>
@@ -102,25 +102,25 @@ export default function BrokersPage() {
                       </div>
                     </div>
 
-                    <p className="text-sm text-zinc-400 line-clamp-2">{broker.description}</p>
+                    <p className="text-xs sm:text-sm text-zinc-400 line-clamp-2">{broker.description}</p>
 
                     {/* Key Stats */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                       <div>
                         <p className="text-xs text-zinc-500">Min Deposit</p>
-                        <p className="text-sm font-semibold text-zinc-100">${broker.min_deposit}</p>
+                        <p className="text-sm sm:text-base font-semibold text-zinc-100">${broker.min_deposit}</p>
                       </div>
                       <div>
                         <p className="text-xs text-zinc-500">Max Leverage</p>
-                        <p className="text-sm font-semibold text-zinc-100">{broker.max_leverage}</p>
+                        <p className="text-sm sm:text-base font-semibold text-zinc-100">{broker.max_leverage}</p>
                       </div>
                       <div>
                         <p className="text-xs text-zinc-500">Spreads From</p>
-                        <p className="text-sm font-semibold text-zinc-100">{broker.spreads_from} pips</p>
+                        <p className="text-sm sm:text-base font-semibold text-zinc-100">{broker.spreads_from} pips</p>
                       </div>
                       <div>
                         <p className="text-xs text-zinc-500">Regulation</p>
-                        <p className="text-sm font-semibold text-zinc-100 line-clamp-1">{broker.regulation}</p>
+                        <p className="text-sm sm:text-base font-semibold text-zinc-100 line-clamp-1">{broker.regulation}</p>
                       </div>
                     </div>
 
