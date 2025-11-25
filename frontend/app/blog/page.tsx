@@ -52,17 +52,17 @@ export default function BlogPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-zinc-100">Trading Blog</h1>
-          <p className="text-zinc-400 mt-1">Insights, analysis, and trading education</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-zinc-100">Trading Blog</h1>
+          <p className="text-sm sm:text-base text-zinc-400 mt-1">Insights, analysis, and trading education</p>
         </div>
-        <Link href="/blog/new">
-          <Button variant="primary">
-            <Plus className="w-4 h-4 mr-2" />
-            Write Article
+        <Link href="/blog/new" className="w-full sm:w-auto">
+          <Button variant="primary" className="w-full sm:w-auto">
+            <Plus className="w-4 h-4 sm:mr-2" />
+            <span className="sm:inline">Write Article</span>
           </Button>
         </Link>
       </div>
@@ -71,11 +71,11 @@ export default function BlogPage() {
       {loading ? (
         <LoadingSpinner />
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {posts.map((post) => (
             <Card key={post.id} hover className="overflow-hidden">
               <Link href={`/blog/${post.slug}`}>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {post.featured_image && (
                     <div className="aspect-video bg-zinc-800 rounded-lg overflow-hidden">
                       <img
@@ -86,16 +86,16 @@ export default function BlogPage() {
                     </div>
                   )}
                   
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {post.category && (
-                      <Badge variant="primary">{post.category}</Badge>
+                      <Badge variant="primary" className="text-xs">{post.category}</Badge>
                     )}
                     
-                    <h3 className="text-xl font-semibold text-zinc-100 line-clamp-2 hover:text-primary transition-colors">
+                    <h3 className="text-base sm:text-lg lg:text-xl font-semibold text-zinc-100 line-clamp-2 hover:text-primary transition-colors">
                       {post.title}
                     </h3>
                     
-                    <p className="text-sm text-zinc-400 line-clamp-3">{post.excerpt}</p>
+                    <p className="text-xs sm:text-sm text-zinc-400 line-clamp-3">{post.excerpt}</p>
                     
                     <div className="flex items-center justify-between text-xs text-zinc-500">
                       <div className="flex items-center gap-2">
