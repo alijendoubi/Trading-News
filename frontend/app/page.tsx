@@ -1,11 +1,46 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TrendingUp, Calendar, Newspaper, Bell, Star, Activity } from 'lucide-react';
+import { TrendingUp, Calendar, Newspaper, Bell, Star, Activity, ArrowRight, Clock } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { PriceChange } from '@/components/ui/PriceChange';
 
 export default function Home() {
+  const [markets, setMarkets] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [news, setNews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      // Fetch top 4 markets
+      const marketsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/markets/assets?limit=4`);
+      const marketsData = await marketsRes.json();
+      setMarkets(marketsData.assets || []);
+
+      // Fetch upcoming events
+      const eventsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events?limit=3`);
+      const eventsData = await eventsRes.json();
+      setEvents(eventsData.events || []);
+
+      // Fetch latest news
+      const newsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/news?limit=3`);
+      const newsData = await newsRes.json();
+      setNews(newsData.articles || []);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -77,8 +112,128 @@ export default function Home() {
         </Card>
       </div>
 
+      {/* Live Market Data */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-zinc-100">Live Markets</h2>
+          <Link href="/markets">
+            <Button variant="ghost" size="sm">
+              View All <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {markets.slice(0, 4).map((asset) => (
+            <Card key={asset.id} hover>
+              <div className="space-y-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-zinc-500">{asset.type}</p>
+                    <h3 className="font-bold text-zinc-100">{asset.symbol}</h3>
+                  </div>
+                  <Badge variant={asset.change24h >= 0 ? 'success' : 'danger'}>
+                    <PriceChange value={asset.change24h} showIcon />
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-zinc-100">
+                    ${asset.currentPrice?.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-zinc-500">24h Vol: ${(asset.volume24h / 1000000).toFixed(2)}M</p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Economic Events */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-zinc-100">Upcoming Events</h2>
+          <Link href="/calendar">
+            <Button variant="ghost" size="sm">
+              View All <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+        </div>
+        <div className="space-y-3">
+          {events.slice(0, 3).map((event) => (
+            <Card key={event.id} hover>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <Calendar className="w-5 h-5 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h3 className="font-semibold text-zinc-100">{event.title}</h3>
+                    <Badge
+                      variant={event.impact === 'high' ? 'danger' : event.impact === 'medium' ? 'warning' : 'secondary'}
+                    >
+                      {event.impact}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-zinc-500">
+                    <span>{event.country}</span>
+                    <span>•</span>
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{new Date(event.date).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Latest News */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-zinc-100">Latest News</h2>
+          <Link href="/news">
+            <Button variant="ghost" size="sm">
+              View All <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+        </div>
+        <div className="space-y-3">
+          {news.slice(0, 3).map((article) => (
+            <Card key={article.id} hover>
+              <Link href={article.url} target="_blank" rel="noopener noreferrer">
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    {article.imageUrl && (
+                      <img
+                        src={article.imageUrl}
+                        alt={article.title}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-zinc-100 line-clamp-2 mb-1">
+                        {article.title}
+                      </h3>
+                      <div className="flex items-center gap-2 text-xs text-zinc-500">
+                        <span>{article.source}</span>
+                        <span>•</span>
+                        <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                  {article.category && (
+                    <Badge variant="secondary" className="text-xs">{article.category}</Badge>
+                  )}
+                </div>
+              </Link>
+            </Card>
+          ))}
+        </div>
+      </div>
+
       {/* Features Grid */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-6 mt-12">
         <Card hover className="card-gradient-border">
           <div className="flex flex-col items-center text-center">
             <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">

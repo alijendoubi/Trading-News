@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -13,18 +13,53 @@ import {
   User,
   LogIn,
   LogOut,
+  MessageSquare,
+  FileText,
+  Building2,
+  Clock,
 } from 'lucide-react';
 import { useAuth } from '@/lib/authContext';
 
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const { isAuthenticated, logout } = useAuth();
+  const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Update time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+  
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  };
+  
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
   
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/markets', label: 'Markets', icon: TrendingUp },
     { href: '/calendar', label: 'Calendar', icon: Calendar },
     { href: '/news', label: 'News', icon: Newspaper },
+    { href: '/forum', label: 'Forum', icon: MessageSquare },
+    { href: '/blog', label: 'Blog', icon: FileText },
+    { href: '/brokers', label: 'Brokers', icon: Building2 },
     { href: '/watchlist', label: 'Watchlist', icon: Star, auth: true },
     { href: '/alerts', label: 'Alerts', icon: Bell, auth: true },
   ];
@@ -35,12 +70,26 @@ export const Sidebar: React.FC = () => {
     <aside className="fixed left-0 top-0 h-screen w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b border-zinc-800">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2 mb-4">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
             <TrendingUp className="w-5 h-5 text-white" />
           </div>
           <span className="text-xl font-bold text-zinc-100">TradingHub</span>
         </Link>
+        
+        {/* Live Clock */}
+        <div className="bg-zinc-800/50 rounded-lg p-3 space-y-1">
+          <div className="flex items-center gap-2 text-primary">
+            <Clock className="w-4 h-4" />
+            <span className="text-xs font-medium">Live Time</span>
+          </div>
+          <div className="font-mono text-lg font-bold text-zinc-100">
+            {formatTime(currentTime)}
+          </div>
+          <div className="text-xs text-zinc-500">
+            {formatDate(currentTime)}
+          </div>
+        </div>
       </div>
       
       {/* Navigation */}

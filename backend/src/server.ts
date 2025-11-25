@@ -15,6 +15,9 @@ import newsRoutes from './routes/news.routes.js';
 import watchlistsRoutes from './routes/watchlists.routes.js';
 import alertsRoutes from './routes/alerts.routes.js';
 import indicatorsRoutes from './routes/indicators.routes.js';
+import forumRoutes from './routes/forum.routes.js';
+import blogRoutes from './routes/blog.routes.js';
+import brokersRoutes from './routes/brokers.routes.js';
 
 const app: Express = express();
 
@@ -63,6 +66,9 @@ app.use('/api/news', optionalAuthMiddleware, newsRoutes);
 app.use('/api/indicators', optionalAuthMiddleware, indicatorsRoutes);
 app.use('/api/watchlists', watchlistsRoutes);
 app.use('/api/alerts', alertsRoutes);
+app.use('/api/forum', optionalAuthMiddleware, forumRoutes);
+app.use('/api/blog', optionalAuthMiddleware, blogRoutes);
+app.use('/api/brokers', optionalAuthMiddleware, brokersRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

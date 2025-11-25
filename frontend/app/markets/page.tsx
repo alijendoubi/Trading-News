@@ -159,7 +159,7 @@ export default function MarketsPage() {
       </Card>
 
       {/* Market Stats */}
-      <div className="grid md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
         <Card hover>
           <div className="text-sm text-zinc-400 mb-1">Total Markets</div>
           <div className="text-2xl font-bold text-zinc-100">{markets.length}</div>
@@ -174,6 +174,24 @@ export default function MarketsPage() {
           <div className="text-sm text-zinc-400 mb-1">Losers</div>
           <div className="text-2xl font-bold text-danger">
             {markets.filter(m => m.change24h < 0).length}
+          </div>
+        </Card>
+        <Card hover>
+          <div className="text-sm text-zinc-400 mb-1">Avg Change</div>
+          <div className="text-2xl font-bold text-zinc-100">
+            <PriceChange value={markets.reduce((acc, m) => acc + m.change24h, 0) / markets.length} />
+          </div>
+        </Card>
+        <Card hover>
+          <div className="text-sm text-zinc-400 mb-1">Top Gainer</div>
+          <div className="text-2xl font-bold text-success">
+            {markets.length > 0 ? `+${Math.max(...markets.map(m => m.change24h)).toFixed(2)}%` : 'N/A'}
+          </div>
+        </Card>
+        <Card hover>
+          <div className="text-sm text-zinc-400 mb-1">Top Loser</div>
+          <div className="text-2xl font-bold text-danger">
+            {markets.length > 0 ? `${Math.min(...markets.map(m => m.change24h)).toFixed(2)}%` : 'N/A'}
           </div>
         </Card>
       </div>
