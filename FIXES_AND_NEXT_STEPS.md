@@ -43,57 +43,62 @@ All changes have been committed and pushed:
 - Commit 1: "Fix auth response parsing, add blog/new page, and update gitignore"
 - Commit 2: "Add comprehensive deployment documentation"
 
+### 5. Fixed Environment Configuration
+**Issue:** Backend was trying to load `.env.local` from parent directory instead of `.env` from backend directory.
+
+**Fix Applied:**
+- Updated `backend/src/config/env.ts` to correctly load `.env` file
+- Used ES module's `import.meta.url` with `fileURLToPath` for proper path resolution
+- Changed default port from 5000 to 3001 to match actual configuration
+
+**Files Modified:**
+- `backend/src/config/env.ts`
+- `backend/.env` (PORT updated to 3001)
+
+### 6. Fixed Firestore Timestamp Issues
+**Issue:** Using `serverTimestamp()` caused documents to return null values on immediate read.
+
+**Fix Applied:**
+- Changed `createDocument` to use `new Date()` instead of `serverTimestamp()`
+- Updated `updateDocument` to use `new Date()` and added existence check
+- Return document data directly instead of fetching it back (avoids timestamp sync issues)
+
+**Files Modified:**
+- `backend/src/config/firestore.ts`
+
+### 7. Added Firebase Connection Testing
+**Fix Applied:**
+- Created `backend/test-firebase.js` to test Firebase connection independently
+- Helps diagnose Firestore issues before running full application
+
+**Files Created:**
+- `backend/test-firebase.js`
+
 ## 🔧 Known Issues & Troubleshooting
 
-### Firebase/Firestore Configuration
-The backend is experiencing a "5 NOT_FOUND" error when trying to register users. This indicates a Firebase/Firestore configuration issue.
+### ⚠️ Firestore Database Not Enabled (REQUIRES ACTION)
+The backend is experiencing a "5 NOT_FOUND" error because **the Firestore database has not been created** in the Firebase project.
 
-**Possible Causes:**
-1. Firebase project not properly initialized
-2. Service account credentials incorrect or missing
-3. Firestore database not created or enabled
-4. Missing Firebase security rules
+**Root Cause:**
+The Firebase project exists and credentials are valid, but the Firestore database service has not been enabled in Firebase Console.
 
-**How to Fix:**
+**Solution:**
+See the detailed guide: `backend/FIRESTORE_SETUP_REQUIRED.md`
 
-1. **Verify Firebase Project:**
+**Quick Steps:**
+1. Visit: https://console.firebase.google.com/project/tradinghub-1b8b0/firestore
+2. Click "Create database"
+3. Choose "Test mode" for development (30 days) or "Production mode" with security rules
+4. Select a location (e.g., `us-central1`)
+5. Click "Enable" and wait 1-2 minutes
+6. Test connection:
    ```bash
    cd backend
-   cat .env | grep FIREBASE
+   node test-firebase.js
    ```
-   Ensure all Firebase variables are set correctly.
+7. Restart backend and try registration again
 
-2. **Check Service Account Key:**
-   - Verify `backend/serviceAccountKey.json` exists and is valid
-   - Download a fresh key from Firebase Console if needed
-   - Go to: Firebase Console → Project Settings → Service Accounts → Generate New Private Key
-
-3. **Enable Firestore:**
-   - Go to Firebase Console: https://console.firebase.google.com
-   - Select your project
-   - Navigate to Firestore Database
-   - Click "Create database"
-   - Start in production mode or test mode
-
-4. **Test Firebase Connection:**
-   ```bash
-   cd backend
-   npm run dev
-   ```
-   Check logs for Firebase initialization messages
-
-5. **Security Rules:**
-   Add these basic rules in Firebase Console → Firestore Database → Rules:
-   ```javascript
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /users/{userId} {
-         allow read, write: if request.auth != null;
-       }
-     }
-   }
-   ```
+Once Firestore is enabled, all authentication features will work correctly.
 
 ## 📋 Testing Checklist
 
@@ -201,15 +206,17 @@ NEXT_PUBLIC_APP_NAME=TradingHub
 
 ## 🎯 Next Steps
 
-1. **Fix Firebase Connection** (Priority: High)
-   - Verify Firebase credentials
-   - Test registration endpoint
-   - Check Firestore database creation
+1. **Enable Firestore Database** (Priority: CRITICAL - Required for app to work)
+   - Go to Firebase Console: https://console.firebase.google.com/project/tradinghub-1b8b0/firestore
+   - Click "Create database" and choose Test mode
+   - Follow instructions in `backend/FIRESTORE_SETUP_REQUIRED.md`
+   - Test with: `cd backend && node test-firebase.js`
 
-2. **Test Authentication Flow** (Priority: High)
-   - Test user registration
-   - Test user login
-   - Verify token handling
+2. **Test Authentication Flow** (Priority: High - After Firestore is enabled)
+   - Test user registration endpoint
+   - Test user login endpoint
+   - Verify token handling and storage
+   - Test protected routes
 
 3. **Deploy to Production** (Priority: Medium)
    - Choose hosting platform (Vercel/Render recommended)
@@ -259,8 +266,12 @@ If you encounter issues:
 ✅ Blog creation page created
 ✅ Code pushed to GitHub
 ✅ Deployment documentation created
-⚠️  Firebase connection needs verification
-⚠️  User registration/login needs testing
+✅ Environment configuration fixed (.env loading)
+✅ Port configuration fixed (3001)
+✅ Firestore timestamp issues fixed
+✅ Firebase connection test tool added
+⚠️  **Firestore database needs to be enabled in Firebase Console** (see FIRESTORE_SETUP_REQUIRED.md)
+⏸️  User registration/login will work after Firestore is enabled
 
 ---
 
