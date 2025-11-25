@@ -2,7 +2,13 @@ export declare class NewsService {
     /**
      * Get latest news articles
      */
-    static getNews(limit?: number, offset?: number, category?: string): Promise<any>;
+    static getNews(limit?: number, offset?: number, category?: string): Promise<{
+        articles: import("../types/common.types.js").NewsArticle[];
+        total: number;
+    } | {
+        articles: import("../integrations/news.client.js").NewsArticle[];
+        total: number;
+    }>;
     /**
      * Search news articles
      */

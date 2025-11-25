@@ -1,0 +1,167 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "economic_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "country",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "event_date",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "economic_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "impact",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "event_date",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "economic_events",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "event_date",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "market_assets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "symbol",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "market_assets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "symbol",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "news_articles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "category",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "published_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "news_articles",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "published_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "user_alerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "user_alerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "is_active",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "user_watchlists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "asset_id",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "user_watchlists",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "user_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "email",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

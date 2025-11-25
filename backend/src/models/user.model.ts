@@ -1,7 +1,7 @@
-import { queryDb, queryDbSingle } from '../config/db.js';
+import { Collections, getDb, getDocumentById, createDocument, updateDocument, queryWithPagination } from '../config/firestore.js';
 
 export interface UserRow {
-  id: number;
+  id: string;
   email: string;
   name: string;
   password_hash: string;
@@ -12,49 +12,54 @@ export interface UserRow {
 
 export class UserModel {
   static async findByEmail(email: string): Promise<UserRow | null> {
-    return queryDbSingle<UserRow>(
-      'SELECT * FROM users WHERE email = $1',
-      [email]
-    );
+    const db = getDb();
+    const snapshot = await db.collection(Collections.USERS)
+      .where('email', '==', email)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    return {
+      id: doc.id,
+      ...doc.data(),
+    } as UserRow;
   }
 
-  static async findById(id: number): Promise<UserRow | null> {
-    return queryDbSingle<UserRow>(
-      'SELECT * FROM users WHERE id = $1',
-      [id]
-    );
+  static async findById(id: string): Promise<UserRow | null> {
+    return getDocumentById<UserRow>(Collections.USERS, id);
   }
 
   static async create(email: string, passwordHash: string, name: string): Promise<UserRow> {
-    const result = await queryDb<UserRow>(
-      'INSERT INTO users (email, password_hash, name) VALUES ($1, $2, $3) RETURNING *',
-      [email, passwordHash, name]
-    );
-    return result[0];
+    const userData = {
+      email,
+      password_hash: passwordHash,
+      name,
+      preferences: { theme: 'light', notifications: true, defaultCurrency: 'USD' },
+    };
+    return createDocument<UserRow>(Collections.USERS, userData);
   }
 
   static async updatePreferences(
-    userId: number,
+    userId: string,
     preferences: Record<string, unknown>
   ): Promise<UserRow> {
-    const result = await queryDb<UserRow>(
-      'UPDATE users SET preferences = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *',
-      [JSON.stringify(preferences), userId]
-    );
-    return result[0];
+    return updateDocument<UserRow>(Collections.USERS, userId, { preferences });
   }
 
   static async getAll(limit = 50, offset = 0): Promise<{ users: UserRow[]; total: number }> {
-    const [users, countResult] = await Promise.all([
-      queryDb<UserRow>(
-        'SELECT * FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2',
-        [limit, offset]
-      ),
-      queryDb<{ count: string }>('SELECT COUNT(*) as count FROM users'),
-    ]);
+    const result = await queryWithPagination<UserRow>(
+      Collections.USERS,
+      (ref) => ref.orderBy('created_at', 'desc'),
+      limit,
+      offset
+    );
     return {
-      users,
-      total: parseInt(countResult[0]?.count || '0', 10),
+      users: result.items,
+      total: result.total,
     };
   }
 }

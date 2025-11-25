@@ -10,21 +10,19 @@ export const env = {
   port: parseInt(process.env.PORT || '5000', 10),
   api_base_url: process.env.API_BASE_URL || 'http://localhost:5000',
 
-  // Database
-  db: {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    name: process.env.DB_NAME || 'trading_db',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'password',
-    ssl: process.env.DB_SSL === 'true',
-  },
-
   // JWT
   JWT_SECRET: process.env.JWT_SECRET || 'dev-secret-key',
   jwt: {
     secret: process.env.JWT_SECRET || 'dev-secret-key',
     expiry: process.env.JWT_EXPIRY || '7d',
+  },
+
+  // Firebase
+  firebase: {
+    projectId: process.env.FIREBASE_PROJECT_ID || '',
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
+    privateKey: process.env.FIREBASE_PRIVATE_KEY || '',
+    databaseUrl: process.env.FIREBASE_DATABASE_URL || '',
   },
 
   // External APIs

@@ -1,6 +1,6 @@
-import type { MarketAsset } from '../../../common/types.js';
+import type { MarketAsset } from '../types/common.types.js';
 export interface AssetRow {
-    id: number;
+    id: string;
     symbol: string;
     type: string;
     name: string;
@@ -16,7 +16,7 @@ export interface AssetRow {
 export declare class AssetModel {
     static rowToAsset(row: AssetRow): MarketAsset;
     static findBySymbol(symbol: string): Promise<MarketAsset | null>;
-    static findById(id: number): Promise<MarketAsset | null>;
+    static findById(id: string): Promise<MarketAsset | null>;
     static findByType(type: string, limit?: number, offset?: number): Promise<{
         assets: MarketAsset[];
         total: number;
@@ -26,7 +26,7 @@ export declare class AssetModel {
         total: number;
     }>;
     static create(asset: Omit<AssetRow, 'id' | 'created_at' | 'updated_at'>): Promise<MarketAsset>;
-    static update(id: number, asset: Partial<Omit<AssetRow, 'id' | 'created_at' | 'updated_at'>>): Promise<MarketAsset>;
+    static update(id: string, asset: Partial<Omit<AssetRow, 'id' | 'created_at' | 'updated_at'>>): Promise<MarketAsset>;
     static search(query: string, limit?: number): Promise<MarketAsset[]>;
     static getTopMovers(limit?: number): Promise<MarketAsset[]>;
 }

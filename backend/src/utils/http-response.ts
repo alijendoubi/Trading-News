@@ -32,11 +32,14 @@ export class HttpResponse {
   }
 
   static error(res: Response, error: string, status = 400, details?: unknown): Response {
-    return res.status(status).json({
+    const response: any = {
       success: false,
       error,
-      ...(details && { details }),
-    });
+    };
+    if (details) {
+      response.details = details;
+    }
+    return res.status(status).json(response);
   }
 
   static created<T>(res: Response, data: T, message = 'Created'): Response {

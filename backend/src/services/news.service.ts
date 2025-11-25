@@ -25,12 +25,12 @@ export class NewsService {
       }
 
       // Fallback to database
-      return NewsModel.getAll(limit, offset);
+      return NewsModel.getRecent(limit, offset);
     } catch (error) {
       logger.error('Error in getNews:', error);
       // Fallback to database or mock data
       try {
-        return NewsModel.getAll(limit, offset);
+        return NewsModel.getRecent(limit, offset);
       } catch (dbError) {
         // Ultimate fallback to mock data
         const mockNews = newsClient.getMockNews();

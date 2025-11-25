@@ -6,10 +6,42 @@ export interface EconomicEvent {
   date: Date;
   country: string;
   impact: 'Low' | 'Medium' | 'High';
-  forecast?: string;
-  previous?: string;
-  actual?: string;
+  forecast?: number;
+  previous?: number;
+  actual?: number;
   currency?: string;
+}
+
+/**
+ * Parse numeric values from strings like "3.2%", "200K", "-$65B"
+ */
+function parseNumericValue(value?: string): number | undefined {
+  if (!value || typeof value !== 'string') return undefined;
+  
+  let cleaned = value.trim().replace(/[$,\s]/g, '');
+  
+  if (cleaned.endsWith('%')) {
+    const num = parseFloat(cleaned.slice(0, -1));
+    return isNaN(num) ? undefined : num;
+  }
+  
+  if (cleaned.toUpperCase().endsWith('K')) {
+    const num = parseFloat(cleaned.slice(0, -1));
+    return isNaN(num) ? undefined : num * 1000;
+  }
+  
+  if (cleaned.toUpperCase().endsWith('M')) {
+    const num = parseFloat(cleaned.slice(0, -1));
+    return isNaN(num) ? undefined : num * 1000000;
+  }
+  
+  if (cleaned.toUpperCase().endsWith('B')) {
+    const num = parseFloat(cleaned.slice(0, -1));
+    return isNaN(num) ? undefined : num * 1000000000;
+  }
+  
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? undefined : num;
 }
 
 /**
@@ -102,9 +134,9 @@ export class EconomicCalendarRealClient {
             date: this.parseDate(row.date, row.time),
             country: row.country || 'Unknown',
             impact: this.parseImpact(row.importance),
-            forecast: row.forecast || undefined,
-            previous: row.previous || undefined,
-            actual: row.actual || undefined,
+            forecast: parseNumericValue(row.forecast),
+            previous: parseNumericValue(row.previous),
+            actual: parseNumericValue(row.actual),
             currency: row.currency || undefined,
           });
         } catch (e) {
@@ -140,9 +172,9 @@ export class EconomicCalendarRealClient {
         date: new Date(event.date),
         country: event.country,
         impact: this.parseImpact(event.impact),
-        forecast: event.estimate,
-        previous: event.previous,
-        actual: event.actual,
+        forecast: parseNumericValue(event.estimate),
+        previous: parseNumericValue(event.previous),
+        actual: parseNumericValue(event.actual),
         currency: event.currency,
       }));
     } catch (error) {
@@ -162,8 +194,8 @@ export class EconomicCalendarRealClient {
         date: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
         country: 'US',
         impact: 'High',
-        forecast: '200K',
-        previous: '195K',
+        forecast: 200000,
+        previous: 195000,
         currency: 'USD',
       },
       {
@@ -171,8 +203,8 @@ export class EconomicCalendarRealClient {
         date: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
         country: 'US',
         impact: 'High',
-        forecast: '5.25%',
-        previous: '5.00%',
+        forecast: 5.25,
+        previous: 5.00,
         currency: 'USD',
       },
       {
@@ -180,8 +212,8 @@ export class EconomicCalendarRealClient {
         date: new Date(now.getTime() + 24 * 60 * 60 * 1000),
         country: 'US',
         impact: 'High',
-        forecast: '3.2%',
-        previous: '3.0%',
+        forecast: 3.2,
+        previous: 3.0,
         currency: 'USD',
       },
       {
@@ -189,8 +221,8 @@ export class EconomicCalendarRealClient {
         date: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
         country: 'UK',
         impact: 'High',
-        forecast: '0.3%',
-        previous: '0.1%',
+        forecast: 0.3,
+        previous: 0.1,
         currency: 'GBP',
       },
       {

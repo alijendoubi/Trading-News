@@ -1,115 +1,107 @@
 import { Router } from 'express';
-import { pool } from '../config/database.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { getDb } from '../config/firestore.js';
+import { authMiddleware as authenticateToken } from '../middleware/auth.js';
+import admin from 'firebase-admin';
 
 const router = Router();
 
-// GET /api/brokers - Get all brokers with average ratings
+// GET /api/brokers - Get all brokers
 router.get('/', async (req, res) => {
   try {
     const { instruments, regulation, page = 1, limit = 20 } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
     
-    let query = `
-      SELECT 
-        b.*,
-        COALESCE(AVG(r.rating), 0) as avg_rating,
-        COUNT(DISTINCT r.id) as review_count
-      FROM brokers b
-      LEFT JOIN broker_reviews r ON b.id = r.broker_id
-    `;
-    
-    const params: any[] = [];
-    const conditions: string[] = [];
+    const db = getDb();
+    let query: FirebaseFirestore.Query | FirebaseFirestore.CollectionReference = db.collection('brokers');
     
     if (instruments) {
-      conditions.push(`$${params.length + 1} = ANY(b.instruments)`);
-      params.push(instruments);
+      query = query.where('instruments', 'array-contains', instruments);
     }
     
-    if (regulation) {
-      conditions.push(`b.regulation ILIKE $${params.length + 1}`);
-      params.push(`%${regulation}%`);
+    // Get paginated results without counting first (to avoid NOT_FOUND errors)
+    let snapshot;
+    try {
+      snapshot = await query
+        .limit(Number(limit))
+        .offset(offset)
+        .get();
+    } catch (queryError: any) {
+      // If collection doesn't exist or is empty, return empty results
+      if (queryError.code === 5 || queryError.message?.includes('NOT_FOUND')) {
+        return res.json({
+          brokers: [],
+          pagination: {
+            page: Number(page),
+            limit: Number(limit),
+            total: 0,
+          },
+        });
+      }
+      throw queryError;
     }
     
-    if (conditions.length > 0) {
-      query += ` WHERE ${conditions.join(' AND ')}`;
+    const brokers = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    
+    // Get total count only if we have results
+    let total = brokers.length;
+    if (brokers.length === Number(limit)) {
+      try {
+        const countSnapshot = await query.count().get();
+        total = countSnapshot.data().count;
+      } catch (countError) {
+        total = brokers.length;
+      }
     }
-    
-    query += ` GROUP BY b.id ORDER BY review_count DESC, avg_rating DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(limit, offset);
-    
-    const result = await pool.query(query, params);
-    
-    // Get total count
-    let countQuery = `SELECT COUNT(*) as total FROM brokers`;
-    if (conditions.length > 0) {
-      countQuery += ` WHERE ${conditions.join(' AND ')}`;
-    }
-    const countResult = await pool.query(
-      countQuery,
-      params.slice(0, params.length - 2)
-    );
     
     res.json({
-      brokers: result.rows,
+      brokers,
       pagination: {
         page: Number(page),
         limit: Number(limit),
-        total: parseInt(countResult.rows[0].total),
+        total,
       },
     });
   } catch (error) {
     console.error('Error fetching brokers:', error);
-    res.status(500).json({ error: 'Failed to fetch brokers' });
+    res.json({ brokers: [], pagination: { page: 1, limit: 20, total: 0 } });
   }
 });
 
-// GET /api/brokers/:slug - Get single broker with reviews
+// GET /api/brokers/:slug - Get single broker
 router.get('/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
+    const db = getDb();
     
-    // Get broker details
-    const brokerResult = await pool.query(
-      `SELECT 
-        b.*,
-        COALESCE(AVG(r.rating), 0) as avg_rating,
-        COUNT(DISTINCT r.id) as review_count
-       FROM brokers b
-       LEFT JOIN broker_reviews r ON b.id = r.broker_id
-       WHERE b.slug = $1
-       GROUP BY b.id`,
-      [slug]
-    );
+    const snapshot = await db.collection('brokers')
+      .where('slug', '==', slug)
+      .limit(1)
+      .get();
     
-    if (brokerResult.rows.length === 0) {
+    if (snapshot.empty) {
       return res.status(404).json({ error: 'Broker not found' });
     }
     
-    // Get reviews with category ratings
-    const reviewsResult = await pool.query(
-      `SELECT 
-        r.*,
-        u.name as reviewer_name,
-        json_agg(
-          json_build_object(
-            'category', rc.category,
-            'rating', rc.rating
-          )
-        ) FILTER (WHERE rc.id IS NOT NULL) as category_ratings
-       FROM broker_reviews r
-       LEFT JOIN users u ON r.user_id = u.id
-       LEFT JOIN broker_rating_categories rc ON r.id = rc.review_id
-       WHERE r.broker_id = $1
-       GROUP BY r.id, u.id
-       ORDER BY r.created_at DESC`,
-      [brokerResult.rows[0].id]
-    );
+    const brokerDoc = snapshot.docs[0];
+    const broker = { id: brokerDoc.id, ...brokerDoc.data() };
+    
+    // Get reviews for this broker
+    const reviewsSnapshot = await db.collection('broker_reviews')
+      .where('broker_id', '==', brokerDoc.id)
+      .orderBy('created_at', 'desc')
+      .get();
+    
+    const reviews = reviewsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
     
     res.json({
-      broker: brokerResult.rows[0],
-      reviews: reviewsResult.rows,
+      broker,
+      reviews,
     });
   } catch (error) {
     console.error('Error fetching broker:', error);
@@ -121,8 +113,8 @@ router.get('/:slug', async (req, res) => {
 router.post('/:brokerId/reviews', authenticateToken, async (req, res) => {
   try {
     const { brokerId } = req.params;
-    const { rating, title, content, pros, cons, category_ratings } = req.body;
-    const userId = (req as any).user.id;
+    const { rating, title, content, pros, cons } = req.body;
+    const userId = (req as any).userId;
     
     if (!rating || !content) {
       return res.status(400).json({ error: 'Rating and content are required' });
@@ -132,40 +124,35 @@ router.post('/:brokerId/reviews', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Rating must be between 1 and 5' });
     }
     
-    // Check if user already reviewed this broker
-    const existingReview = await pool.query(
-      'SELECT id FROM broker_reviews WHERE broker_id = $1 AND user_id = $2',
-      [brokerId, userId]
-    );
+    const db = getDb();
     
-    if (existingReview.rows.length > 0) {
+    // Check if user already reviewed this broker
+    const existingReview = await db.collection('broker_reviews')
+      .where('broker_id', '==', brokerId)
+      .where('user_id', '==', userId)
+      .limit(1)
+      .get();
+    
+    if (!existingReview.empty) {
       return res.status(400).json({ error: 'You have already reviewed this broker' });
     }
     
     // Insert review
-    const reviewResult = await pool.query(
-      `INSERT INTO broker_reviews (broker_id, user_id, rating, title, content, pros, cons)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [brokerId, userId, rating, title, content, pros, cons]
-    );
+    const docRef = await db.collection('broker_reviews').add({
+      broker_id: brokerId,
+      user_id: userId,
+      rating,
+      title,
+      content,
+      pros,
+      cons,
+      helpful_count: 0,
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+      updated_at: admin.firestore.FieldValue.serverTimestamp(),
+    });
     
-    const reviewId = reviewResult.rows[0].id;
-    
-    // Insert category ratings if provided
-    if (category_ratings && Array.isArray(category_ratings)) {
-      for (const catRating of category_ratings) {
-        if (catRating.category && catRating.rating) {
-          await pool.query(
-            `INSERT INTO broker_rating_categories (review_id, category, rating)
-             VALUES ($1, $2, $3)`,
-            [reviewId, catRating.category, catRating.rating]
-          );
-        }
-      }
-    }
-    
-    res.status(201).json({ review: reviewResult.rows[0] });
+    const doc = await docRef.get();
+    res.status(201).json({ review: { id: doc.id, ...doc.data() } });
   } catch (error) {
     console.error('Error creating review:', error);
     res.status(500).json({ error: 'Failed to create review' });
@@ -177,35 +164,34 @@ router.put('/reviews/:reviewId', authenticateToken, async (req, res) => {
   try {
     const { reviewId } = req.params;
     const { rating, title, content, pros, cons } = req.body;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     
-    const reviewCheck = await pool.query(
-      'SELECT user_id FROM broker_reviews WHERE id = $1',
-      [reviewId]
-    );
+    const db = getDb();
+    const docRef = db.collection('broker_reviews').doc(reviewId);
+    const doc = await docRef.get();
     
-    if (reviewCheck.rows.length === 0) {
+    if (!doc.exists) {
       return res.status(404).json({ error: 'Review not found' });
     }
     
-    if (reviewCheck.rows[0].user_id !== userId) {
+    if (doc.data()?.user_id !== userId) {
       return res.status(403).json({ error: 'Not authorized to edit this review' });
     }
     
-    const result = await pool.query(
-      `UPDATE broker_reviews 
-       SET rating = COALESCE($1, rating),
-           title = COALESCE($2, title),
-           content = COALESCE($3, content),
-           pros = COALESCE($4, pros),
-           cons = COALESCE($5, cons),
-           updated_at = NOW()
-       WHERE id = $6
-       RETURNING *`,
-      [rating, title, content, pros, cons, reviewId]
-    );
+    const updateData: any = {
+      updated_at: admin.firestore.FieldValue.serverTimestamp(),
+    };
     
-    res.json({ review: result.rows[0] });
+    if (rating) updateData.rating = rating;
+    if (title) updateData.title = title;
+    if (content) updateData.content = content;
+    if (pros) updateData.pros = pros;
+    if (cons) updateData.cons = cons;
+    
+    await docRef.update(updateData);
+    const updatedDoc = await docRef.get();
+    
+    res.json({ review: { id: updatedDoc.id, ...updatedDoc.data() } });
   } catch (error) {
     console.error('Error updating review:', error);
     res.status(500).json({ error: 'Failed to update review' });
@@ -216,22 +202,21 @@ router.put('/reviews/:reviewId', authenticateToken, async (req, res) => {
 router.delete('/reviews/:reviewId', authenticateToken, async (req, res) => {
   try {
     const { reviewId } = req.params;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     
-    const reviewCheck = await pool.query(
-      'SELECT user_id FROM broker_reviews WHERE id = $1',
-      [reviewId]
-    );
+    const db = getDb();
+    const docRef = db.collection('broker_reviews').doc(reviewId);
+    const doc = await docRef.get();
     
-    if (reviewCheck.rows.length === 0) {
+    if (!doc.exists) {
       return res.status(404).json({ error: 'Review not found' });
     }
     
-    if (reviewCheck.rows[0].user_id !== userId) {
+    if (doc.data()?.user_id !== userId) {
       return res.status(403).json({ error: 'Not authorized to delete this review' });
     }
     
-    await pool.query('DELETE FROM broker_reviews WHERE id = $1', [reviewId]);
+    await docRef.delete();
     
     res.json({ message: 'Review deleted successfully' });
   } catch (error) {
@@ -244,24 +229,33 @@ router.delete('/reviews/:reviewId', authenticateToken, async (req, res) => {
 router.post('/reviews/:reviewId/helpful', authenticateToken, async (req, res) => {
   try {
     const { reviewId } = req.params;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     
-    await pool.query(
-      `INSERT INTO broker_review_helpful (review_id, user_id)
-       VALUES ($1, $2)
-       ON CONFLICT (review_id, user_id) DO NOTHING`,
-      [reviewId, userId]
-    );
+    const db = getDb();
     
-    // Update helpful count
-    await pool.query(
-      `UPDATE broker_reviews 
-       SET helpful_count = (
-         SELECT COUNT(*) FROM broker_review_helpful WHERE review_id = $1
-       )
-       WHERE id = $1`,
-      [reviewId]
-    );
+    // Check if already marked helpful
+    const existing = await db.collection('broker_review_helpful')
+      .where('review_id', '==', reviewId)
+      .where('user_id', '==', userId)
+      .limit(1)
+      .get();
+    
+    if (!existing.empty) {
+      return res.json({ message: 'Review already marked as helpful' });
+    }
+    
+    // Add helpful marking
+    await db.collection('broker_review_helpful').add({
+      review_id: reviewId,
+      user_id: userId,
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    
+    // Increment helpful count
+    const reviewRef = db.collection('broker_reviews').doc(reviewId);
+    await reviewRef.update({
+      helpful_count: admin.firestore.FieldValue.increment(1)
+    });
     
     res.json({ message: 'Review marked as helpful' });
   } catch (error) {

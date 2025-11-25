@@ -3,18 +3,18 @@ export declare class MarketsService {
      * Get all assets with live prices
      */
     static getAssets(limit?: number, offset?: number): Promise<{
-        assets: import("../../../common/types.js").MarketAsset[];
+        assets: import("../types/common.types.js").MarketAsset[];
         total: number;
     }>;
     /**
      * Get single asset by symbol
      */
-    static getAssetBySymbol(symbol: string): Promise<import("../../../common/types.js").MarketAsset | {
+    static getAssetBySymbol(symbol: string): Promise<import("../types/common.types.js").MarketAsset | {
         last_price: number;
         change_24h: number;
         id: string;
         symbol: string;
-        type: import("../../../common/types.js").AssetType;
+        type: import("../types/common.types.js").AssetType;
         name: string;
         lastPrice: number;
         change: number;
@@ -27,11 +27,11 @@ export declare class MarketsService {
     /**
      * Search assets
      */
-    static searchAssets(query: string): Promise<import("../../../common/types.js").MarketAsset[]>;
+    static searchAssets(query: string): Promise<import("../types/common.types.js").MarketAsset[]>;
     /**
      * Get top moving assets
      */
-    static getTopMovers(limit?: number): Promise<import("../../../common/types.js").MarketAsset[] | {
+    static getTopMovers(limit?: number): Promise<import("../types/common.types.js").MarketAsset[] | {
         assets: {
             symbol: string;
             name: string;
@@ -45,7 +45,7 @@ export declare class MarketsService {
      * Get assets by type
      */
     static getAssetsByType(type: string, limit?: number, offset?: number): Promise<{
-        assets: import("../../../common/types.js").MarketAsset[];
+        assets: import("../types/common.types.js").MarketAsset[];
         total: number;
     }>;
     /**

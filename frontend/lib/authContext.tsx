@@ -45,17 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await apiClient.post('/auth/login', { email, password });
-    const { accessToken, refreshToken, user } = response.data.data;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+    const { user, tokens } = response.data.data;
+    localStorage.setItem('accessToken', tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
     setUser(user);
   };
 
   const register = async (email: string, password: string, name: string) => {
     const response = await apiClient.post('/auth/register', { email, password, name });
-    const { accessToken, refreshToken, user } = response.data.data;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+    const { user, tokens } = response.data.data;
+    localStorage.setItem('accessToken', tokens.accessToken);
+    localStorage.setItem('refreshToken', tokens.refreshToken);
     setUser(user);
   };
 

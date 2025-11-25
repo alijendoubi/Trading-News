@@ -1,6 +1,6 @@
 {
-  "/markets/page": "app/markets/page.js",
-  "/calendar/page": "app/calendar/page.js",
   "/news/page": "app/news/page.js",
-  "/page": "app/page.js"
+  "/calendar/page": "app/calendar/page.js",
+  "/markets/page": "app/markets/page.js",
+  "/register/page": "app/register/page.js"
 }

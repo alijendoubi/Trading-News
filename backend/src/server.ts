@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { env } from './config/env.js';
-import { initializeDb, closeDb } from './config/db.js';
+import { initializeFirebase, closeFirebase } from './config/firebase.js';
 import { logger } from './config/logger.js';
 import { authMiddleware, optionalAuthMiddleware } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
@@ -80,7 +80,7 @@ app.use(errorHandler);
 async function gracefulShutdown(): Promise<void> {
   logger.info('Graceful shutdown initiated');
   try {
-    await closeDb();
+    await closeFirebase();
     process.exit(0);
   } catch (error) {
     logger.error('Error during shutdown', { error });
@@ -95,10 +95,10 @@ process.on('SIGINT', gracefulShutdown);
 async function start(): Promise<void> {
   try {
     try {
-      await initializeDb();
-      logger.info('Database connected successfully');
-    } catch (dbError) {
-      logger.warn('Database connection failed, running in API-only mode (no database)', { dbError });
+      initializeFirebase();
+      logger.info('Firebase connected successfully');
+    } catch (firebaseError) {
+      logger.warn('Firebase connection failed, running in API-only mode (no database)', { firebaseError });
     }
     
     // Start cron jobs (they will handle errors gracefully)

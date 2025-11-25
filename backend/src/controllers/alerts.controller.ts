@@ -54,10 +54,10 @@ export class AlertsController {
   static async updateAlert(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.userId!;
-      const alertId = parseInt(req.params.id);
+      const alertId = req.params.id;
       const { settings, isActive } = req.body;
 
-      if (isNaN(alertId)) {
+      if (!alertId) {
         errorResponse(res, 'Invalid alert ID', 400);
         return;
       }
@@ -86,9 +86,9 @@ export class AlertsController {
   static async deleteAlert(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.userId!;
-      const alertId = parseInt(req.params.id);
+      const alertId = req.params.id;
 
-      if (isNaN(alertId)) {
+      if (!alertId) {
         errorResponse(res, 'Invalid alert ID', 400);
         return;
       }

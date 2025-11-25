@@ -1,6 +1,6 @@
-import type { NewsArticle } from '../../../common/types.js';
+import type { NewsArticle } from '../types/common.types.js';
 export interface NewsRow {
-    id: number;
+    id: string;
     title: string;
     url: string;
     source: string;
@@ -13,7 +13,7 @@ export interface NewsRow {
 }
 export declare class NewsModel {
     static rowToNews(row: NewsRow): NewsArticle;
-    static findById(id: number): Promise<NewsArticle | null>;
+    static findById(id: string): Promise<NewsArticle | null>;
     static getRecent(limit?: number, offset?: number): Promise<{
         articles: NewsArticle[];
         total: number;

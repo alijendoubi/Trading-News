@@ -115,7 +115,7 @@ export class MarketsService {
       for (const price of livePrices) {
         const asset = await AssetModel.findBySymbol(price.symbol);
         if (asset) {
-          await AssetModel.updatePrice(asset.id, price.price, price.change24h);
+          await AssetModel.update(asset.id, { last_price: price.price, change: price.change24h });
         }
       }
       

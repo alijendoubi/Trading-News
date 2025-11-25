@@ -24,9 +24,11 @@ export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const { isAuthenticated, logout } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [mounted, setMounted] = useState(false);
   
   // Update time every second
   useEffect(() => {
+    setMounted(true);
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
@@ -83,12 +85,25 @@ export const Sidebar: React.FC = () => {
             <Clock className="w-4 h-4" />
             <span className="text-xs font-medium">Live Time</span>
           </div>
-          <div className="font-mono text-lg font-bold text-zinc-100">
-            {formatTime(currentTime)}
-          </div>
-          <div className="text-xs text-zinc-500">
-            {formatDate(currentTime)}
-          </div>
+          {mounted ? (
+            <>
+              <div className="font-mono text-lg font-bold text-zinc-100">
+                {formatTime(currentTime)}
+              </div>
+              <div className="text-xs text-zinc-500">
+                {formatDate(currentTime)}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="font-mono text-lg font-bold text-zinc-100">
+                --:--:--
+              </div>
+              <div className="text-xs text-zinc-500">
+                Loading...
+              </div>
+            </>
+          )}
         </div>
       </div>
       

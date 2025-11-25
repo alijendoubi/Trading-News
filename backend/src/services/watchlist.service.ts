@@ -6,7 +6,7 @@ export class WatchlistService {
   /**
    * Get user's watchlist
    */
-  static async getUserWatchlist(userId: number) {
+  static async getUserWatchlist(userId: string) {
     try {
       const watchlist = await WatchlistModel.getUserWatchlist(userId);
       return { watchlist, total: watchlist.length };
@@ -19,7 +19,7 @@ export class WatchlistService {
   /**
    * Add asset to watchlist
    */
-  static async addToWatchlist(userId: number, assetId: number) {
+  static async addToWatchlist(userId: string, assetId: string) {
     try {
       // Check if asset exists
       const asset = await AssetModel.findById(assetId);
@@ -45,7 +45,7 @@ export class WatchlistService {
   /**
    * Remove asset from watchlist
    */
-  static async removeFromWatchlist(userId: number, assetId: number) {
+  static async removeFromWatchlist(userId: string, assetId: string) {
     try {
       const removed = await WatchlistModel.removeFromWatchlist(userId, assetId);
       if (!removed) {

@@ -1,8 +1,8 @@
-import { queryDb, queryDbSingle } from '../config/db.js';
+import { Collections, getDb, getDocumentById, createDocument, updateDocument, deleteDocument } from '../config/firestore.js';
 
 export interface AlertRow {
-  id: number;
-  user_id: number;
+  id: string;
+  user_id: string;
   type: string;
   settings: any;
   is_active: boolean;
@@ -14,81 +14,95 @@ export class AlertModel {
   /**
    * Get user's alerts
    */
-  static async getUserAlerts(userId: number): Promise<AlertRow[]> {
-    return queryDb<AlertRow>(
-      `SELECT * FROM user_alerts
-       WHERE user_id = $1
-       ORDER BY created_at DESC`,
-      [userId]
-    );
+  static async getUserAlerts(userId: string): Promise<AlertRow[]> {
+    const db = getDb();
+    const snapshot = await db.collection(Collections.USER_ALERTS)
+      .where('user_id', '==', userId)
+      .orderBy('created_at', 'desc')
+      .get();
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as AlertRow[];
   }
 
   /**
    * Get single alert by ID
    */
-  static async findById(id: number): Promise<AlertRow | null> {
-    return queryDbSingle<AlertRow>(
-      `SELECT * FROM user_alerts WHERE id = $1`,
-      [id]
-    );
+  static async findById(id: string): Promise<AlertRow | null> {
+    return getDocumentById<AlertRow>(Collections.USER_ALERTS, id);
   }
 
   /**
    * Create new alert
    */
   static async create(
-    userId: number,
+    userId: string,
     type: string,
     settings: any
   ): Promise<AlertRow> {
-    const result = await queryDb<AlertRow>(
-      `INSERT INTO user_alerts (user_id, type, settings)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [userId, type, JSON.stringify(settings)]
-    );
-    return result[0];
+    const alertData = {
+      user_id: userId,
+      type,
+      settings,
+      is_active: true,
+    };
+    return createDocument<AlertRow>(Collections.USER_ALERTS, alertData);
   }
 
   /**
    * Update alert
    */
   static async update(
-    id: number,
-    userId: number,
+    id: string,
+    userId: string,
     settings: any,
     isActive: boolean
   ): Promise<AlertRow | null> {
-    const result = await queryDb<AlertRow>(
-      `UPDATE user_alerts
-       SET settings = $1, is_active = $2, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $3 AND user_id = $4
-       RETURNING *`,
-      [JSON.stringify(settings), isActive, id, userId]
-    );
-    return result[0] || null;
+    const db = getDb();
+    const docRef = db.collection(Collections.USER_ALERTS).doc(id);
+    const doc = await docRef.get();
+
+    if (!doc.exists || doc.data()?.user_id !== userId) {
+      return null;
+    }
+
+    return updateDocument<AlertRow>(Collections.USER_ALERTS, id, {
+      settings,
+      is_active: isActive,
+    });
   }
 
   /**
    * Delete alert
    */
-  static async delete(id: number, userId: number): Promise<boolean> {
-    const result = await queryDb(
-      `DELETE FROM user_alerts
-       WHERE id = $1 AND user_id = $2
-       RETURNING id`,
-      [id, userId]
-    );
-    return result.length > 0;
+  static async delete(id: string, userId: string): Promise<boolean> {
+    const db = getDb();
+    const docRef = db.collection(Collections.USER_ALERTS).doc(id);
+    const doc = await docRef.get();
+
+    if (!doc.exists || doc.data()?.user_id !== userId) {
+      return false;
+    }
+
+    await deleteDocument(Collections.USER_ALERTS, id);
+    return true;
   }
 
   /**
    * Get all active price alerts
    */
   static async getActivePriceAlerts(): Promise<AlertRow[]> {
-    return queryDb<AlertRow>(
-      `SELECT * FROM user_alerts
-       WHERE is_active = true AND type = 'price'`
-    );
+    const db = getDb();
+    const snapshot = await db.collection(Collections.USER_ALERTS)
+      .where('is_active', '==', true)
+      .where('type', '==', 'price')
+      .get();
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as AlertRow[];
   }
 }

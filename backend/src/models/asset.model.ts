@@ -1,8 +1,8 @@
-import { queryDb, queryDbSingle } from '../config/db.js';
-import type { MarketAsset, AssetType } from '../../../common/types.js';
+import { Collections, getDb, getDocumentById, createDocument, updateDocument, queryWithPagination } from '../config/firestore.js';
+import type { MarketAsset, AssetType } from '../types/common.types.js';
 
 export interface AssetRow {
-  id: number;
+  id: string;
   symbol: string;
   type: string;
   name: string;
@@ -34,93 +34,96 @@ export class AssetModel {
   }
 
   static async findBySymbol(symbol: string): Promise<MarketAsset | null> {
-    const row = await queryDbSingle<AssetRow>(
-      'SELECT * FROM market_assets WHERE symbol = $1',
-      [symbol]
-    );
-    return row ? this.rowToAsset(row) : null;
+    const db = getDb();
+    const snapshot = await db.collection(Collections.MARKET_ASSETS)
+      .where('symbol', '==', symbol)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    return this.rowToAsset({ id: doc.id, ...doc.data() } as AssetRow);
   }
 
-  static async findById(id: number): Promise<MarketAsset | null> {
-    const row = await queryDbSingle<AssetRow>(
-      'SELECT * FROM market_assets WHERE id = $1',
-      [id]
-    );
+  static async findById(id: string): Promise<MarketAsset | null> {
+    const row = await getDocumentById<AssetRow>(Collections.MARKET_ASSETS, id);
     return row ? this.rowToAsset(row) : null;
   }
 
   static async findByType(type: string, limit = 50, offset = 0): Promise<{ assets: MarketAsset[]; total: number }> {
-    const [rows, countResult] = await Promise.all([
-      queryDb<AssetRow>(
-        'SELECT * FROM market_assets WHERE type = $1 ORDER BY symbol ASC LIMIT $2 OFFSET $3',
-        [type, limit, offset]
-      ),
-      queryDb<{ count: string }>('SELECT COUNT(*) as count FROM market_assets WHERE type = $1', [type]),
-    ]);
+    const result = await queryWithPagination<AssetRow>(
+      Collections.MARKET_ASSETS,
+      (ref) => ref.where('type', '==', type).orderBy('symbol', 'asc'),
+      limit,
+      offset
+    );
     return {
-      assets: rows.map(this.rowToAsset),
-      total: parseInt(countResult[0]?.count || '0', 10),
+      assets: result.items.map(this.rowToAsset),
+      total: result.total,
     };
   }
 
   static async getAll(limit = 100, offset = 0): Promise<{ assets: MarketAsset[]; total: number }> {
-    const [rows, countResult] = await Promise.all([
-      queryDb<AssetRow>(
-        'SELECT * FROM market_assets ORDER BY symbol ASC LIMIT $1 OFFSET $2',
-        [limit, offset]
-      ),
-      queryDb<{ count: string }>('SELECT COUNT(*) as count FROM market_assets'),
-    ]);
+    const result = await queryWithPagination<AssetRow>(
+      Collections.MARKET_ASSETS,
+      (ref) => ref.orderBy('symbol', 'asc'),
+      limit,
+      offset
+    );
     return {
-      assets: rows.map(this.rowToAsset),
-      total: parseInt(countResult[0]?.count || '0', 10),
+      assets: result.items.map(this.rowToAsset),
+      total: result.total,
     };
   }
 
   static async create(asset: Omit<AssetRow, 'id' | 'created_at' | 'updated_at'>): Promise<MarketAsset> {
-    const result = await queryDb<AssetRow>(
-      `INSERT INTO market_assets (symbol, type, name, last_price, change, change_amount, high_24h, low_24h, volume)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [asset.symbol, asset.type, asset.name, asset.last_price, asset.change, asset.change_amount, asset.high_24h, asset.low_24h, asset.volume]
-    );
-    return this.rowToAsset(result[0]);
+    const row = await createDocument<AssetRow>(Collections.MARKET_ASSETS, asset);
+    return this.rowToAsset(row);
   }
 
-  static async update(id: number, asset: Partial<Omit<AssetRow, 'id' | 'created_at' | 'updated_at'>>): Promise<MarketAsset> {
-    const updates: string[] = [];
-    const values: unknown[] = [];
-    let paramCount = 1;
-
-    Object.entries(asset).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        updates.push(`${key} = $${paramCount}`);
-        values.push(value);
-        paramCount++;
-      }
-    });
-
-    values.push(id);
-    const result = await queryDb<AssetRow>(
-      `UPDATE market_assets SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${paramCount} RETURNING *`,
-      values
-    );
-    return this.rowToAsset(result[0]);
+  static async update(id: string, asset: Partial<Omit<AssetRow, 'id' | 'created_at' | 'updated_at'>>): Promise<MarketAsset> {
+    const row = await updateDocument<AssetRow>(Collections.MARKET_ASSETS, id, asset);
+    return this.rowToAsset(row);
   }
 
   static async search(query: string, limit = 20): Promise<MarketAsset[]> {
-    const searchQuery = `%${query}%`;
-    const rows = await queryDb<AssetRow>(
-      'SELECT * FROM market_assets WHERE symbol ILIKE $1 OR name ILIKE $1 ORDER BY symbol ASC LIMIT $2',
-      [searchQuery, limit]
-    );
+    const db = getDb();
+    const upperQuery = query.toUpperCase();
+    
+    // Search by symbol prefix (Firestore doesn't support LIKE, so we use range queries)
+    const snapshot = await db.collection(Collections.MARKET_ASSETS)
+      .where('symbol', '>=', upperQuery)
+      .where('symbol', '<=', upperQuery + '\uf8ff')
+      .orderBy('symbol', 'asc')
+      .limit(limit)
+      .get();
+
+    const rows = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as AssetRow[];
+
     return rows.map(this.rowToAsset);
   }
 
   static async getTopMovers(limit = 10): Promise<MarketAsset[]> {
-    const rows = await queryDb<AssetRow>(
-      'SELECT * FROM market_assets ORDER BY ABS(change) DESC LIMIT $1',
-      [limit]
-    );
-    return rows.map(this.rowToAsset);
+    const db = getDb();
+    // Firestore doesn't support ABS(), so we fetch more and sort in-memory
+    const snapshot = await db.collection(Collections.MARKET_ASSETS)
+      .orderBy('change', 'desc')
+      .limit(limit * 2)
+      .get();
+
+    const rows = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as AssetRow[];
+
+    // Sort by absolute value of change
+    const sorted = rows.sort((a, b) => Math.abs(b.change) - Math.abs(a.change));
+    return sorted.slice(0, limit).map(this.rowToAsset);
   }
 }

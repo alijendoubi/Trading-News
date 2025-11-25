@@ -54,9 +54,9 @@ export class WatchlistController {
   static async removeFromWatchlist(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.userId!;
-      const assetId = parseInt(req.params.assetId);
+      const assetId = req.params.assetId;
 
-      if (isNaN(assetId)) {
+      if (!assetId) {
         errorResponse(res, 'Invalid asset ID', 400);
         return;
       }

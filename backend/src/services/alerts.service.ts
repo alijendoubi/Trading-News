@@ -6,7 +6,7 @@ export class AlertsService {
   /**
    * Get user's alerts
    */
-  static async getUserAlerts(userId: number) {
+  static async getUserAlerts(userId: string) {
     try {
       const alerts = await AlertModel.getUserAlerts(userId);
       return { alerts, total: alerts.length };
@@ -19,7 +19,7 @@ export class AlertsService {
   /**
    * Create new alert
    */
-  static async createAlert(userId: number, type: string, settings: any) {
+  static async createAlert(userId: string, type: string, settings: any) {
     try {
       // Validate alert type
       if (!['price', 'event'].includes(type)) {
@@ -52,8 +52,8 @@ export class AlertsService {
    * Update alert
    */
   static async updateAlert(
-    alertId: number,
-    userId: number,
+    alertId: string,
+    userId: string,
     settings: any,
     isActive: boolean
   ) {
@@ -73,7 +73,7 @@ export class AlertsService {
   /**
    * Delete alert
    */
-  static async deleteAlert(alertId: number, userId: number) {
+  static async deleteAlert(alertId: string, userId: string) {
     try {
       const deleted = await AlertModel.delete(alertId, userId);
       if (!deleted) {
@@ -102,7 +102,7 @@ export class AlertsService {
 
           if (!asset) continue;
 
-          const currentPrice = asset.last_price;
+          const currentPrice = asset.lastPrice;
           const targetPrice = parseFloat(settings.targetPrice);
           const condition = settings.condition;
 

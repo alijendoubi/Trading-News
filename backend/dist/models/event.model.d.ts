@@ -1,6 +1,6 @@
-import type { EconomicEvent } from '../../../common/types.js';
+import type { EconomicEvent } from '../types/common.types.js';
 export interface EventRow {
-    id: number;
+    id: string;
     title: string;
     event_date: Date;
     impact: string;
@@ -15,7 +15,7 @@ export interface EventRow {
 }
 export declare class EventModel {
     static rowToEvent(row: EventRow): EconomicEvent;
-    static findById(id: number): Promise<EconomicEvent | null>;
+    static findById(id: string): Promise<EconomicEvent | null>;
     static findUpcoming(limit?: number, offset?: number): Promise<{
         events: EconomicEvent[];
         total: number;
@@ -29,7 +29,7 @@ export declare class EventModel {
         total: number;
     }>;
     static create(event: Omit<EventRow, 'id' | 'created_at' | 'updated_at'>): Promise<EconomicEvent>;
-    static update(id: number, event: Partial<Omit<EventRow, 'id' | 'created_at' | 'updated_at'>>): Promise<EconomicEvent>;
+    static update(id: string, event: Partial<Omit<EventRow, 'id' | 'created_at' | 'updated_at'>>): Promise<EconomicEvent>;
     static deleteOld(days?: number): Promise<number>;
     static findByTitleAndDate(title: string, date: Date): Promise<EconomicEvent | null>;
 }

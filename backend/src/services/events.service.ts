@@ -30,18 +30,18 @@ export class EventsService {
       }
 
       // Fallback to database
-      return EventModel.getAll(limit, offset);
+      return EventModel.findUpcoming(limit, offset);
     } catch (error) {
       logger.error('Error in getEvents:', error);
       // Fallback to database on error
-      return EventModel.getAll(limit, offset);
+      return EventModel.findUpcoming(limit, offset);
     }
   }
 
   /**
    * Get single event by ID
    */
-  static async getEventById(id: number) {
+  static async getEventById(id: string) {
     return EventModel.findById(id);
   }
 
@@ -73,7 +73,7 @@ export class EventsService {
       };
     } catch (error) {
       logger.error('Error in getHighImpactEvents:', error);
-      return EventModel.getAll(limit, 0);
+      return EventModel.findUpcoming(limit, 0);
     }
   }
 

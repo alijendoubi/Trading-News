@@ -1,97 +1,83 @@
 import { Router } from 'express';
-import { pool } from '../config/database.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { getDb } from '../config/firestore.js';
+import { authMiddleware as authenticateToken } from '../middleware/auth.js';
+import admin from 'firebase-admin';
 
 const router = Router();
 
 // GET /api/forum/categories - Get all forum categories
 router.get('/categories', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT 
-        c.*, 
-        COUNT(DISTINCT t.id) as thread_count,
-        COUNT(DISTINCT p.id) as post_count
-      FROM forum_categories c
-      LEFT JOIN forum_threads t ON c.id = t.category_id
-      LEFT JOIN forum_posts p ON t.id = p.thread_id
-      GROUP BY c.id
-      ORDER BY c.id
-    `);
+    const db = getDb();
+    const snapshot = await db.collection('forum_categories')
+      .orderBy('created_at', 'asc')
+      .get();
     
-    res.json({ categories: result.rows });
+    const categories = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    
+    res.json({ categories });
   } catch (error) {
     console.error('Error fetching forum categories:', error);
-    res.status(500).json({ error: 'Failed to fetch forum categories' });
+    res.json({ categories: [] });
   }
 });
 
-// GET /api/forum/threads - Get all threads with pagination and filtering
+// GET /api/forum/threads - Get all threads
 router.get('/threads', async (req, res) => {
   try {
     const { category, page = 1, limit = 20, sort = 'latest' } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
     
-    let query = `
-      SELECT 
-        t.*,
-        u.name as author_name,
-        u.email as author_email,
-        c.name as category_name,
-        c.slug as category_slug,
-        COUNT(DISTINCT p.id) as reply_count,
-        COUNT(DISTINCT tl.id) as like_count,
-        MAX(COALESCE(p.created_at, t.created_at)) as last_activity
-      FROM forum_threads t
-      LEFT JOIN users u ON t.user_id = u.id
-      LEFT JOIN forum_categories c ON t.category_id = c.id
-      LEFT JOIN forum_posts p ON t.id = p.thread_id
-      LEFT JOIN forum_thread_likes tl ON t.id = tl.thread_id
-    `;
-    
-    const params: any[] = [];
+    const db = getDb();
+    let query: FirebaseFirestore.Query | FirebaseFirestore.CollectionReference = db.collection('forum_threads');
     
     if (category) {
-      query += ` WHERE c.slug = $${params.length + 1}`;
-      params.push(category);
+      query = query.where('category_slug', '==', category);
     }
     
-    query += ` GROUP BY t.id, u.id, c.id`;
-    
+    // Apply sorting (before fetching to avoid index issues)
     if (sort === 'latest') {
-      query += ` ORDER BY t.is_pinned DESC, last_activity DESC`;
-    } else if (sort === 'popular') {
-      query += ` ORDER BY t.is_pinned DESC, like_count DESC, reply_count DESC`;
+      query = query.orderBy('updated_at', 'desc');
     } else if (sort === 'views') {
-      query += ` ORDER BY t.is_pinned DESC, t.views DESC`;
+      query = query.orderBy('views', 'desc');
     }
     
-    query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(limit, offset);
+    // Get paginated results
+    const snapshot = await query
+      .limit(Number(limit))
+      .offset(offset)
+      .get();
     
-    const result = await pool.query(query, params);
+    const threads = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
     
-    // Get total count
-    let countQuery = `SELECT COUNT(*) as total FROM forum_threads t`;
-    if (category) {
-      countQuery += ` JOIN forum_categories c ON t.category_id = c.id WHERE c.slug = $1`;
+    // Get total count only if we have results
+    let total = threads.length;
+    if (threads.length === Number(limit)) {
+      try {
+        const countSnapshot = await query.count().get();
+        total = countSnapshot.data().count;
+      } catch (countError) {
+        total = threads.length;
+      }
     }
-    const countResult = await pool.query(
-      countQuery,
-      category ? [category] : []
-    );
     
     res.json({
-      threads: result.rows,
+      threads,
       pagination: {
         page: Number(page),
         limit: Number(limit),
-        total: parseInt(countResult.rows[0].total),
+        total,
       },
     });
   } catch (error) {
     console.error('Error fetching forum threads:', error);
-    res.status(500).json({ error: 'Failed to fetch forum threads' });
+    res.json({ threads: [], pagination: { page: 1, limit: 20, total: 0 } });
   }
 });
 
@@ -99,58 +85,36 @@ router.get('/threads', async (req, res) => {
 router.get('/threads/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const db = getDb();
     
-    // Get thread details
-    const threadResult = await pool.query(
-      `
-      SELECT 
-        t.*,
-        u.name as author_name,
-        u.email as author_email,
-        c.name as category_name,
-        c.slug as category_slug,
-        COUNT(DISTINCT tl.id) as like_count
-      FROM forum_threads t
-      LEFT JOIN users u ON t.user_id = u.id
-      LEFT JOIN forum_categories c ON t.category_id = c.id
-      LEFT JOIN forum_thread_likes tl ON t.id = tl.thread_id
-      WHERE t.id = $1
-      GROUP BY t.id, u.id, c.id
-      `,
-      [id]
-    );
+    // Get thread
+    const threadDoc = await db.collection('forum_threads').doc(id).get();
     
-    if (threadResult.rows.length === 0) {
+    if (!threadDoc.exists) {
       return res.status(404).json({ error: 'Thread not found' });
     }
     
+    const thread = { id: threadDoc.id, ...threadDoc.data() };
+    
     // Increment view count
-    await pool.query(
-      'UPDATE forum_threads SET views = views + 1 WHERE id = $1',
-      [id]
-    );
+    await threadDoc.ref.update({
+      views: admin.firestore.FieldValue.increment(1)
+    });
     
     // Get posts
-    const postsResult = await pool.query(
-      `
-      SELECT 
-        p.*,
-        u.name as author_name,
-        u.email as author_email,
-        COUNT(DISTINCT pl.id) as like_count
-      FROM forum_posts p
-      LEFT JOIN users u ON p.user_id = u.id
-      LEFT JOIN forum_post_likes pl ON p.id = pl.post_id
-      WHERE p.thread_id = $1
-      GROUP BY p.id, u.id
-      ORDER BY p.created_at ASC
-      `,
-      [id]
-    );
+    const postsSnapshot = await db.collection('forum_posts')
+      .where('thread_id', '==', id)
+      .orderBy('created_at', 'asc')
+      .get();
+    
+    const posts = postsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
     
     res.json({
-      thread: threadResult.rows[0],
-      posts: postsResult.rows,
+      thread,
+      posts,
     });
   } catch (error) {
     console.error('Error fetching thread:', error);
@@ -162,7 +126,7 @@ router.get('/threads/:id', async (req, res) => {
 router.post('/threads', authenticateToken, async (req, res) => {
   try {
     const { category_id, title, content } = req.body;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     
     if (!category_id || !title || !content) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -174,14 +138,22 @@ router.post('/threads', authenticateToken, async (req, res) => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '') + '-' + Date.now();
     
-    const result = await pool.query(
-      `INSERT INTO forum_threads (category_id, user_id, title, slug, content)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING *`,
-      [category_id, userId, title, slug, content]
-    );
+    const db = getDb();
+    const docRef = await db.collection('forum_threads').add({
+      category_id,
+      user_id: userId,
+      title,
+      slug,
+      content,
+      views: 0,
+      is_pinned: false,
+      is_locked: false,
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+      updated_at: admin.firestore.FieldValue.serverTimestamp(),
+    });
     
-    res.status(201).json({ thread: result.rows[0] });
+    const doc = await docRef.get();
+    res.status(201).json({ thread: { id: doc.id, ...doc.data() } });
   } catch (error) {
     console.error('Error creating thread:', error);
     res.status(500).json({ error: 'Failed to create thread' });
@@ -193,40 +165,41 @@ router.post('/threads/:id/posts', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { content } = req.body;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     
     if (!content) {
       return res.status(400).json({ error: 'Content is required' });
     }
     
-    // Check if thread exists and is not locked
-    const threadCheck = await pool.query(
-      'SELECT is_locked FROM forum_threads WHERE id = $1',
-      [id]
-    );
+    const db = getDb();
     
-    if (threadCheck.rows.length === 0) {
+    // Check if thread exists and is not locked
+    const threadDoc = await db.collection('forum_threads').doc(id).get();
+    
+    if (!threadDoc.exists) {
       return res.status(404).json({ error: 'Thread not found' });
     }
     
-    if (threadCheck.rows[0].is_locked) {
+    if (threadDoc.data()?.is_locked) {
       return res.status(403).json({ error: 'Thread is locked' });
     }
     
-    const result = await pool.query(
-      `INSERT INTO forum_posts (thread_id, user_id, content)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [id, userId, content]
-    );
+    // Create post
+    const docRef = await db.collection('forum_posts').add({
+      thread_id: id,
+      user_id: userId,
+      content,
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+      updated_at: admin.firestore.FieldValue.serverTimestamp(),
+    });
     
     // Update thread's updated_at
-    await pool.query(
-      'UPDATE forum_threads SET updated_at = NOW() WHERE id = $1',
-      [id]
-    );
+    await threadDoc.ref.update({
+      updated_at: admin.firestore.FieldValue.serverTimestamp()
+    });
     
-    res.status(201).json({ post: result.rows[0] });
+    const doc = await docRef.get();
+    res.status(201).json({ post: { id: doc.id, ...doc.data() } });
   } catch (error) {
     console.error('Error creating post:', error);
     res.status(500).json({ error: 'Failed to create post' });
@@ -238,33 +211,31 @@ router.put('/threads/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, content } = req.body;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     
-    // Check if user is the author
-    const threadCheck = await pool.query(
-      'SELECT user_id FROM forum_threads WHERE id = $1',
-      [id]
-    );
+    const db = getDb();
+    const docRef = db.collection('forum_threads').doc(id);
+    const doc = await docRef.get();
     
-    if (threadCheck.rows.length === 0) {
+    if (!doc.exists) {
       return res.status(404).json({ error: 'Thread not found' });
     }
     
-    if (threadCheck.rows[0].user_id !== userId) {
+    if (doc.data()?.user_id !== userId) {
       return res.status(403).json({ error: 'Not authorized to edit this thread' });
     }
     
-    const result = await pool.query(
-      `UPDATE forum_threads 
-       SET title = COALESCE($1, title), 
-           content = COALESCE($2, content),
-           updated_at = NOW()
-       WHERE id = $3
-       RETURNING *`,
-      [title, content, id]
-    );
+    const updateData: any = {
+      updated_at: admin.firestore.FieldValue.serverTimestamp(),
+    };
     
-    res.json({ thread: result.rows[0] });
+    if (title) updateData.title = title;
+    if (content) updateData.content = content;
+    
+    await docRef.update(updateData);
+    const updatedDoc = await docRef.get();
+    
+    res.json({ thread: { id: updatedDoc.id, ...updatedDoc.data() } });
   } catch (error) {
     console.error('Error updating thread:', error);
     res.status(500).json({ error: 'Failed to update thread' });
@@ -275,22 +246,21 @@ router.put('/threads/:id', authenticateToken, async (req, res) => {
 router.delete('/threads/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     
-    const threadCheck = await pool.query(
-      'SELECT user_id FROM forum_threads WHERE id = $1',
-      [id]
-    );
+    const db = getDb();
+    const docRef = db.collection('forum_threads').doc(id);
+    const doc = await docRef.get();
     
-    if (threadCheck.rows.length === 0) {
+    if (!doc.exists) {
       return res.status(404).json({ error: 'Thread not found' });
     }
     
-    if (threadCheck.rows[0].user_id !== userId) {
+    if (doc.data()?.user_id !== userId) {
       return res.status(403).json({ error: 'Not authorized to delete this thread' });
     }
     
-    await pool.query('DELETE FROM forum_threads WHERE id = $1', [id]);
+    await docRef.delete();
     
     res.json({ message: 'Thread deleted successfully' });
   } catch (error) {
@@ -303,14 +273,26 @@ router.delete('/threads/:id', authenticateToken, async (req, res) => {
 router.post('/threads/:id/like', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     
-    await pool.query(
-      `INSERT INTO forum_thread_likes (thread_id, user_id)
-       VALUES ($1, $2)
-       ON CONFLICT (thread_id, user_id) DO NOTHING`,
-      [id, userId]
-    );
+    const db = getDb();
+    
+    // Check if already liked
+    const existing = await db.collection('forum_thread_likes')
+      .where('thread_id', '==', id)
+      .where('user_id', '==', userId)
+      .limit(1)
+      .get();
+    
+    if (!existing.empty) {
+      return res.json({ message: 'Thread already liked' });
+    }
+    
+    await db.collection('forum_thread_likes').add({
+      thread_id: id,
+      user_id: userId,
+      created_at: admin.firestore.FieldValue.serverTimestamp(),
+    });
     
     res.json({ message: 'Thread liked successfully' });
   } catch (error) {
@@ -323,12 +305,20 @@ router.post('/threads/:id/like', authenticateToken, async (req, res) => {
 router.delete('/threads/:id/like', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     
-    await pool.query(
-      'DELETE FROM forum_thread_likes WHERE thread_id = $1 AND user_id = $2',
-      [id, userId]
-    );
+    const db = getDb();
+    const snapshot = await db.collection('forum_thread_likes')
+      .where('thread_id', '==', id)
+      .where('user_id', '==', userId)
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      return res.status(404).json({ error: 'Like not found' });
+    }
+    
+    await snapshot.docs[0].ref.delete();
     
     res.json({ message: 'Thread unliked successfully' });
   } catch (error) {

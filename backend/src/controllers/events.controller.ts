@@ -36,7 +36,7 @@ export class EventsController {
   static async getById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const event = await EventModel.findById(parseInt(id));
+      const event = await EventModel.findById(id);
       if (!event) {
         HttpResponse.notFound(res);
         return;

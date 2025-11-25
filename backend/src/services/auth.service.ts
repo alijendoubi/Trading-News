@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs'; // Note: Install bcryptjs if needed, or migrate to Firebase Auth
 import jwt from 'jsonwebtoken';
 import { UserModel, UserRow } from '../models/user.model.js';
 import { logger } from '../config/logger.js';
@@ -10,7 +10,7 @@ export interface AuthTokens {
 }
 
 export interface UserResponse {
-  id: number;
+  id: string;
   email: string;
   name: string;
   preferences: Record<string, unknown>;
@@ -72,7 +72,7 @@ export class AuthService {
   static async refreshToken(refreshToken: string): Promise<AuthTokens> {
     try {
       // Verify refresh token
-      const decoded = jwt.verify(refreshToken, env.JWT_SECRET) as { userId: number; type: string };
+      const decoded = jwt.verify(refreshToken, env.JWT_SECRET) as { userId: string; type: string };
 
       if (decoded.type !== 'refresh') {
         throw new Error('Invalid token type');
@@ -97,7 +97,7 @@ export class AuthService {
    */
   static async verifyAccessToken(token: string): Promise<UserResponse> {
     try {
-      const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: number; type: string };
+      const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string; type: string };
 
       if (decoded.type !== 'access') {
         throw new Error('Invalid token type');

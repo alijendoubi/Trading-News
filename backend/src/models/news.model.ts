@@ -1,8 +1,8 @@
-import { queryDb, queryDbSingle } from '../config/db.js';
-import type { NewsArticle } from '../../../common/types.js';
+import { Collections, getDb, getDocumentById, createDocument, queryWithPagination } from '../config/firestore.js';
+import type { NewsArticle } from '../types/common.types.js';
 
 export interface NewsRow {
-  id: number;
+  id: string;
   title: string;
   url: string;
   source: string;
@@ -28,55 +28,55 @@ export class NewsModel {
     };
   }
 
-  static async findById(id: number): Promise<NewsArticle | null> {
-    const row = await queryDbSingle<NewsRow>(
-      'SELECT * FROM news_articles WHERE id = $1',
-      [id]
-    );
+  static async findById(id: string): Promise<NewsArticle | null> {
+    const row = await getDocumentById<NewsRow>(Collections.NEWS_ARTICLES, id);
     return row ? this.rowToNews(row) : null;
   }
 
   static async getRecent(limit = 50, offset = 0): Promise<{ articles: NewsArticle[]; total: number }> {
-    const [rows, countResult] = await Promise.all([
-      queryDb<NewsRow>(
-        'SELECT * FROM news_articles ORDER BY published_at DESC LIMIT $1 OFFSET $2',
-        [limit, offset]
-      ),
-      queryDb<{ count: string }>('SELECT COUNT(*) as count FROM news_articles'),
-    ]);
+    const result = await queryWithPagination<NewsRow>(
+      Collections.NEWS_ARTICLES,
+      (ref) => ref.orderBy('published_at', 'desc'),
+      limit,
+      offset
+    );
     return {
-      articles: rows.map(this.rowToNews),
-      total: parseInt(countResult[0]?.count || '0', 10),
+      articles: result.items.map(this.rowToNews),
+      total: result.total,
     };
   }
 
   static async getByCategory(category: string, limit = 50, offset = 0): Promise<{ articles: NewsArticle[]; total: number }> {
-    const [rows, countResult] = await Promise.all([
-      queryDb<NewsRow>(
-        'SELECT * FROM news_articles WHERE category = $1 ORDER BY published_at DESC LIMIT $2 OFFSET $3',
-        [category, limit, offset]
-      ),
-      queryDb<{ count: string }>('SELECT COUNT(*) as count FROM news_articles WHERE category = $1', [category]),
-    ]);
+    const result = await queryWithPagination<NewsRow>(
+      Collections.NEWS_ARTICLES,
+      (ref) => ref.where('category', '==', category).orderBy('published_at', 'desc'),
+      limit,
+      offset
+    );
     return {
-      articles: rows.map(this.rowToNews),
-      total: parseInt(countResult[0]?.count || '0', 10),
+      articles: result.items.map(this.rowToNews),
+      total: result.total,
     };
   }
 
   static async create(article: Omit<NewsRow, 'id' | 'created_at' | 'updated_at'>): Promise<NewsArticle> {
-    const result = await queryDb<NewsRow>(
-      'INSERT INTO news_articles (title, url, source, published_at, category, summary, image_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-      [article.title, article.url, article.source, article.published_at, article.category, article.summary, article.image_url]
-    );
-    return this.rowToNews(result[0]);
+    const row = await createDocument<NewsRow>(Collections.NEWS_ARTICLES, article);
+    return this.rowToNews(row);
   }
 
   static async findByUrl(url: string): Promise<NewsArticle | null> {
-    const row = await queryDbSingle<NewsRow>(
-      'SELECT * FROM news_articles WHERE url = $1',
-      [url]
-    );
-    return row ? this.rowToNews(row) : null;
+    const db = getDb();
+    const snapshot = await db.collection(Collections.NEWS_ARTICLES)
+      .where('url', '==', url)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    const row = { id: doc.id, ...doc.data() } as NewsRow;
+    return this.rowToNews(row);
   }
 }

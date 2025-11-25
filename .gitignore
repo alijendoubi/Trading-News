@@ -47,5 +47,8 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 
+# Firebase
+serviceAccountKey.json
+
 # Docker
 .docker/

@@ -5,7 +5,7 @@ import { errorResponse } from '../utils/http-response.js';
 import { logger } from '../config/logger.js';
 
 interface JwtPayload {
-  userId: number;
+  userId: string;
   email: string;
   type: string;
 }
@@ -13,7 +13,7 @@ interface JwtPayload {
 declare global {
   namespace Express {
     interface Request {
-      userId?: number;
+      userId?: string;
       userEmail?: string;
       user?: JwtPayload;
     }
