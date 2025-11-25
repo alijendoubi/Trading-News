@@ -6,6 +6,7 @@ interface CardProps {
   hover?: boolean;
   gradient?: boolean;
   glass?: boolean;
+  onClick?: () => void;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -14,13 +15,17 @@ export const Card: React.FC<CardProps> = ({
   hover = false,
   gradient = false,
   glass = false,
+  onClick,
 }) => {
   const baseStyles = 'rounded-lg p-6 border border-zinc-800';
   const bgStyles = glass ? 'glass' : gradient ? 'card-gradient' : 'bg-zinc-900';
   const hoverStyles = hover ? 'hover:border-zinc-700 hover:shadow-lg transition-all duration-300' : '';
   
   return (
-    <div className={`${baseStyles} ${bgStyles} ${hoverStyles} ${className}`}>
+    <div 
+      className={`${baseStyles} ${bgStyles} ${hoverStyles} ${className}`}
+      onClick={onClick}
+    >
       {children}
     </div>
   );
