@@ -44,17 +44,17 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <div className="relative overflow-hidden mb-12">
+      <div className="relative overflow-hidden mb-8 sm:mb-12">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-purple-500/10 to-transparent rounded-2xl" />
         <Card className="relative" gradient>
-          <div className="py-16 text-center">
-            <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
+          <div className="py-8 sm:py-12 lg:py-16 text-center px-4">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
               Real-Time Market Intelligence
             </h1>
-            <p className="text-xl text-zinc-400 mb-8 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg lg:text-xl text-zinc-400 mb-6 sm:mb-8 max-w-2xl mx-auto">
               Professional trading platform with live market data, economic insights, and advanced analytics
             </p>
-            <div className="flex gap-4 justify-center flex-wrap">
+            <div className="flex gap-3 sm:gap-4 justify-center flex-wrap">
               <Link href="/markets">
                 <Button variant="primary" size="lg">
                   <TrendingUp className="w-5 h-5 mr-2" />
@@ -73,56 +73,56 @@ export default function Home() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid md:grid-cols-4 gap-6 mb-12">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 sm:mb-12">
         <Card hover>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-zinc-400 mb-1">Markets Tracked</p>
-              <p className="text-3xl font-bold text-zinc-100">250+</p>
+              <p className="text-xs sm:text-sm text-zinc-400 mb-1">Markets Tracked</p>
+              <p className="text-2xl sm:text-3xl font-bold text-zinc-100">250+</p>
             </div>
-            <Activity className="w-12 h-12 text-primary opacity-50" />
+            <Activity className="w-8 h-8 sm:w-12 sm:h-12 text-primary opacity-50" />
           </div>
         </Card>
         <Card hover>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-zinc-400 mb-1">Economic Events</p>
-              <p className="text-3xl font-bold text-zinc-100">1.5K+</p>
+              <p className="text-xs sm:text-sm text-zinc-400 mb-1">Economic Events</p>
+              <p className="text-2xl sm:text-3xl font-bold text-zinc-100">1.5K+</p>
             </div>
-            <Calendar className="w-12 h-12 text-success opacity-50" />
+            <Calendar className="w-8 h-8 sm:w-12 sm:h-12 text-success opacity-50" />
           </div>
         </Card>
         <Card hover>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-zinc-400 mb-1">News Sources</p>
-              <p className="text-3xl font-bold text-zinc-100">50+</p>
+              <p className="text-xs sm:text-sm text-zinc-400 mb-1">News Sources</p>
+              <p className="text-2xl sm:text-3xl font-bold text-zinc-100">50+</p>
             </div>
-            <Newspaper className="w-12 h-12 text-warning opacity-50" />
+            <Newspaper className="w-8 h-8 sm:w-12 sm:h-12 text-warning opacity-50" />
           </div>
         </Card>
         <Card hover>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-zinc-400 mb-1">Real-Time Updates</p>
-              <p className="text-3xl font-bold text-zinc-100">24/7</p>
+              <p className="text-xs sm:text-sm text-zinc-400 mb-1">Real-Time Updates</p>
+              <p className="text-2xl sm:text-3xl font-bold text-zinc-100">24/7</p>
             </div>
-            <Bell className="w-12 h-12 text-danger opacity-50" />
+            <Bell className="w-8 h-8 sm:w-12 sm:h-12 text-danger opacity-50" />
           </div>
         </Card>
       </div>
 
       {/* Live Market Data */}
-      <div className="space-y-4">
+      <div className="space-y-4 mb-8 sm:mb-12">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-zinc-100">Live Markets</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-zinc-100">Live Markets</h2>
           <Link href="/markets">
             <Button variant="ghost" size="sm">
               View All <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </Link>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {markets.slice(0, 4).map((asset) => (
             <Card key={asset.id} hover>
               <div className="space-y-2">
@@ -148,9 +148,9 @@ export default function Home() {
       </div>
 
       {/* Economic Events */}
-      <div className="space-y-4">
+      <div className="space-y-4 mb-8 sm:mb-12">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-zinc-100">Upcoming Events</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-zinc-100">Upcoming Events</h2>
           <Link href="/calendar">
             <Button variant="ghost" size="sm">
               View All <ArrowRight className="w-4 h-4 ml-2" />
@@ -191,7 +191,7 @@ export default function Home() {
       {/* Latest News */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-zinc-100">Latest News</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-zinc-100">Latest News</h2>
           <Link href="/news">
             <Button variant="ghost" size="sm">
               View All <ArrowRight className="w-4 h-4 ml-2" />

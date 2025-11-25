@@ -17,6 +17,8 @@ import {
   FileText,
   Building2,
   Clock,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useAuth } from '@/lib/authContext';
 
@@ -25,6 +27,7 @@ export const Sidebar: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [mounted, setMounted] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Update time every second
   useEffect(() => {
@@ -35,6 +38,23 @@ export const Sidebar: React.FC = () => {
     
     return () => clearInterval(timer);
   }, []);
+  
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+  
+  // Prevent scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
   
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('en-US', {
@@ -69,7 +89,31 @@ export const Sidebar: React.FC = () => {
   const isActive = (href: string) => pathname === href;
   
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-100 hover:bg-zinc-800 transition-colors"
+        aria-label="Toggle menu"
+      >
+        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+      </button>
+      
+      {/* Overlay for mobile */}
+      {isMobileMenuOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <aside className={`
+        fixed left-0 top-0 h-screen w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-40
+        transform transition-transform duration-300 ease-in-out
+        lg:translate-x-0
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
       {/* Logo */}
       <div className="p-6 border-b border-zinc-800">
         <Link href="/" className="flex items-center gap-2 mb-4">
@@ -165,5 +209,6 @@ export const Sidebar: React.FC = () => {
         )}
       </div>
     </aside>
+    </>
   );
 };
