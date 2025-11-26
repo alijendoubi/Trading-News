@@ -17,7 +17,7 @@ export default function Home() {
   const [events, setEvents] = useState<any[]>([]);
   const [news, setNews] = useState<any[]>([]);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<'forex' | 'crypto' | 'commodities' | 'indices'>('forex');
+  const [activeTab, setActiveTab] = useState<'forex' | 'crypto' | 'commodity' | 'index'>('forex');
   const [loading, setLoading] = useState(true);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [alertAsset, setAlertAsset] = useState<any>(null);
@@ -188,17 +188,22 @@ export default function Home() {
           <Card className="p-4">
             {/* Asset Type Tabs */}
             <div className="flex items-center gap-1 mb-4 border-b border-zinc-800 overflow-x-auto">
-              {['forex', 'crypto', 'commodities', 'indices'].map((tab) => (
+              {[
+                { value: 'forex', label: 'Forex' },
+                { value: 'crypto', label: 'Crypto' },
+                { value: 'commodity', label: 'Commodities' },
+                { value: 'index', label: 'Indices' }
+              ].map((tab) => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab as any)}
-                  className={`px-4 py-2 text-sm font-medium capitalize transition-colors whitespace-nowrap ${
-                    activeTab === tab
+                  key={tab.value}
+                  onClick={() => setActiveTab(tab.value as any)}
+                  className={`px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    activeTab === tab.value
                       ? 'text-zinc-100 border-b-2 border-primary'
                       : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
-                  {tab}
+                  {tab.label}
                 </button>
               ))}
             </div>
