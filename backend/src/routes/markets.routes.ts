@@ -11,44 +11,77 @@ const router = Router();
 // Main markets endpoint - returns all markets data with LIVE data from multiple APIs
 router.get('/', async (req: Request, res: Response) => {
   try {
-    // Get live crypto data from Binance (free, no key needed)
-    const cryptoTickers = await binanceClient.get24hrTicker();
-    const topCrypto = cryptoTickers
-      .filter((t: any) => t.symbol.endsWith('USDT'))
-      .sort((a: any, b: any) => b.quoteVolume - a.quoteVolume)
-      .slice(0, 20)
-      .map((ticker: any) => ({
-        id: ticker.symbol,
-        symbol: ticker.symbol.replace('USDT', ''),
-        name: ticker.symbol.replace('USDT', ''),
-        currentPrice: ticker.price,
-        change24h: ticker.priceChangePercent,
-        volume24h: ticker.volume,
-        marketCap: ticker.quoteVolume,
-        type: 'crypto' as const,
-      }));
+    let marketsData: any[] = [];
 
-    // Get top stocks from Yahoo Finance (free, no key needed)
-    const stockSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'BRK-B', 'JPM', 'V'];
-    const stockQuotes = await yahooFinanceClient.getQuotes(stockSymbols);
-    const stocks = stockQuotes.map((quote: any) => ({
-      id: quote.symbol,
-      symbol: quote.symbol,
-      name: quote.symbol,
-      currentPrice: quote.price,
-      change24h: quote.changePercent,
-      volume24h: quote.volume,
-      marketCap: quote.marketCap || 0,
-      type: 'stock' as const,
+    // Try to get live crypto data from Binance (free, no key needed)
+    try {
+      const cryptoTickers = await binanceClient.get24hrTicker();
+      if (cryptoTickers && cryptoTickers.length > 0) {
+        const topCrypto = cryptoTickers
+          .filter((t: any) => t.symbol.endsWith('USDT'))
+          .sort((a: any, b: any) => b.quoteVolume - a.quoteVolume)
+          .slice(0, 20)
+          .map((ticker: any) => ({
+            id: ticker.symbol,
+            symbol: ticker.symbol.replace('USDT', ''),
+            name: ticker.symbol.replace('USDT', ''),
+            currentPrice: ticker.price,
+            change24h: ticker.priceChangePercent,
+            volume24h: ticker.volume,
+            marketCap: ticker.quoteVolume,
+            type: 'crypto' as const,
+          }));
+        marketsData = [...marketsData, ...topCrypto];
+        logger.info(`Fetched ${topCrypto.length} crypto assets from Binance`);
+      }
+    } catch (cryptoError) {
+      logger.warn('Failed to fetch crypto data from Binance:', cryptoError);
+    }
+
+    // Try to get top stocks from Yahoo Finance (free, no key needed)
+    try {
+      const stockSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'BRK-B', 'JPM', 'V'];
+      const stockQuotes = await yahooFinanceClient.getQuotes(stockSymbols);
+      if (stockQuotes && stockQuotes.length > 0) {
+        const stocks = stockQuotes.map((quote: any) => ({
+          id: quote.symbol,
+          symbol: quote.symbol,
+          name: quote.symbol,
+          currentPrice: quote.price,
+          change24h: quote.changePercent,
+          volume24h: quote.volume,
+          marketCap: quote.marketCap || 0,
+          type: 'stock' as const,
+        }));
+        marketsData = [...marketsData, ...stocks];
+        logger.info(`Fetched ${stocks.length} stock assets from Yahoo Finance`);
+      }
+    } catch (stockError) {
+      logger.warn('Failed to fetch stock data from Yahoo Finance:', stockError);
+    }
+
+    // If we got data from APIs, return it
+    if (marketsData.length > 0) {
+      logger.info(`Returning ${marketsData.length} total assets`);
+      return HttpResponse.success(res, marketsData);
+    }
+
+    // Fallback to mock data if APIs failed
+    logger.info('Using mock data as fallback');
+    const mockData = mockAssets.map(asset => ({
+      id: asset.id,
+      symbol: asset.symbol,
+      name: asset.name,
+      currentPrice: asset.lastPrice,
+      change24h: asset.change,
+      volume24h: asset.volume || 0,
+      marketCap: asset.volume ? asset.volume * asset.lastPrice : asset.lastPrice * 1000000,
+      type: asset.type,
     }));
-
-    // Combine crypto and stocks
-    const marketsData = [...topCrypto, ...stocks];
-    
-    HttpResponse.success(res, marketsData);
+    HttpResponse.success(res, mockData);
   } catch (error) {
-    logger.error('Error fetching live markets data:', error);
-    // Fallback to mock data
+    logger.error('Error in markets endpoint:', error);
+    // Final fallback to mock data
     const marketsData = mockAssets.map(asset => ({
       id: asset.id,
       symbol: asset.symbol,
