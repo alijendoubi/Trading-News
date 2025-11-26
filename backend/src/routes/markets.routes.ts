@@ -3,105 +3,135 @@ import { mockAssets } from '../services/mock-data.service.js';
 import { HttpResponse } from '../utils/http-response.js';
 import { aggregatedDataService } from '../services/aggregatedData.service.js';
 import { yahooFinanceClient } from '../integrations/yahooFinance.client.js';
-import { binanceClient } from '../integrations/binance.client.js';
-import { twelveDataClient } from '../integrations/twelvedata.client.js';
 import { logger } from '../config/logger.js';
 
 const router = Router();
 
-// Main markets endpoint - returns LIVE data from Binance and Yahoo Finance
+// Main markets endpoint - returns 100% REAL-TIME data from CoinGecko + Yahoo Finance (NO API KEYS NEEDED)
 router.get('/', async (req: Request, res: Response) => {
   try {
     let marketsData: any[] = [];
 
-    // Get live crypto data from Binance (always works, no API key)
-    logger.info('Fetching crypto data from Binance...');
+    // Get live crypto data from CoinGecko (free, no API key, always works)
+    logger.info('Fetching crypto data from CoinGecko...');
     try {
-      const cryptoTickers = await binanceClient.get24hrTicker();
-      logger.info(`Binance returned ${cryptoTickers.length} tickers`);
+      const axios = require('axios');
+      const cryptoResponse = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+        params: {
+          vs_currency: 'usd',
+          order: 'market_cap_desc',
+          per_page: 30,
+          page: 1,
+          sparkline: false
+        },
+        timeout: 10000
+      });
       
-      if (cryptoTickers && cryptoTickers.length > 0) {
-        // Get top 30 crypto by volume
-        const topCrypto = cryptoTickers
-          .filter((t: any) => t.symbol.endsWith('USDT'))
-          .sort((a: any, b: any) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
-          .slice(0, 30)
-          .map((ticker: any) => ({
-            id: ticker.symbol,
-            symbol: ticker.symbol.replace('USDT', ''),
-            name: ticker.symbol.replace('USDT', ''),
-            currentPrice: parseFloat(ticker.price),
-            change24h: parseFloat(ticker.priceChangePercent),
-            volume24h: parseFloat(ticker.volume),
-            marketCap: parseFloat(ticker.quoteVolume),
-            type: 'crypto' as const,
-          }));
+      if (cryptoResponse.data && cryptoResponse.data.length > 0) {
+        const topCrypto = cryptoResponse.data.map((coin: any) => ({
+          id: coin.id,
+          symbol: coin.symbol.toUpperCase(),
+          name: coin.name,
+          currentPrice: coin.current_price,
+          change24h: coin.price_change_percentage_24h || 0,
+          volume24h: coin.total_volume || 0,
+          marketCap: coin.market_cap || 0,
+          type: 'crypto' as const,
+        }));
         
         marketsData = [...marketsData, ...topCrypto];
-        logger.info(`✓ Added ${topCrypto.length} crypto assets from Binance`);
+        logger.info(`✓ Added ${topCrypto.length} crypto assets from CoinGecko`);
       } else {
-        logger.warn('Binance returned empty array');
+        logger.warn('CoinGecko returned empty array');
       }
     } catch (cryptoError: any) {
-      logger.error('Binance API error:', cryptoError.message);
+      logger.error('CoinGecko API error:', cryptoError.message);
     }
 
-    // Fetch REAL-TIME traditional markets from Twelve Data API
-    logger.info('Fetching real-time traditional markets from Twelve Data...');
+    // Fetch REAL-TIME traditional markets from Yahoo Finance (free, no API key)
+    logger.info('Fetching real-time traditional markets from Yahoo Finance...');
     
     try {
-      // Define all symbols to fetch
-      const stockSymbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'BRK.B', 'JPM', 'V', 'NFLX', 'DIS', 'PYPL', 'INTC', 'AMD', 'BABA', 'TSM', 'WMT', 'JNJ', 'UNH'];
-      const forexSymbols = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'NZD/USD', 'EUR/GBP'];
-      const commoditySymbols = ['XAU/USD', 'XAG/USD', 'WTI/USD', 'BRENT/USD', 'NG/USD', 'HG/USD']; // Gold, Silver, Crude, Brent, NatGas, Copper
-      const indexSymbols = ['SPX', 'DJI', 'IXIC', 'FTSE', 'DAX', 'N225', 'HSI'];
+      const axios = require('axios');
       
-      // Fetch all symbols in batches (Twelve Data supports 50 symbols per request)
-      const allSymbols = [...stockSymbols, ...forexSymbols, ...commoditySymbols, ...indexSymbols];
-      const quotes = await twelveDataClient.getQuotes(allSymbols);
+      // Define assets to fetch with Yahoo Finance symbols
+      const assets = [
+        // Top Stocks
+        { symbol: 'AAPL', name: 'Apple Inc.', type: 'stock' },
+        { symbol: 'MSFT', name: 'Microsoft', type: 'stock' },
+        { symbol: 'GOOGL', name: 'Alphabet', type: 'stock' },
+        { symbol: 'AMZN', name: 'Amazon', type: 'stock' },
+        { symbol: 'NVDA', name: 'NVIDIA', type: 'stock' },
+        { symbol: 'TSLA', name: 'Tesla', type: 'stock' },
+        { symbol: 'META', name: 'Meta', type: 'stock' },
+        { symbol: 'JPM', name: 'JPMorgan', type: 'stock' },
+        { symbol: 'V', name: 'Visa', type: 'stock' },
+        { symbol: 'NFLX', name: 'Netflix', type: 'stock' },
+        // Forex pairs
+        { symbol: 'EURUSD=X', name: 'EUR/USD', type: 'forex', displaySymbol: 'EURUSD' },
+        { symbol: 'GBPUSD=X', name: 'GBP/USD', type: 'forex', displaySymbol: 'GBPUSD' },
+        { symbol: 'USDJPY=X', name: 'USD/JPY', type: 'forex', displaySymbol: 'USDJPY' },
+        { symbol: 'AUDUSD=X', name: 'AUD/USD', type: 'forex', displaySymbol: 'AUDUSD' },
+        // Commodities
+        { symbol: 'GC=F', name: 'Gold', type: 'commodity', displaySymbol: 'GOLD' },
+        { symbol: 'SI=F', name: 'Silver', type: 'commodity', displaySymbol: 'SILVER' },
+        { symbol: 'CL=F', name: 'Crude Oil WTI', type: 'commodity', displaySymbol: 'CRUDE' },
+        { symbol: 'BZ=F', name: 'Brent Crude', type: 'commodity', displaySymbol: 'BRENT' },
+        // Indices
+        { symbol: '^GSPC', name: 'S&P 500', type: 'index', displaySymbol: 'SPX' },
+        { symbol: '^DJI', name: 'Dow Jones', type: 'index', displaySymbol: 'DJI' },
+        { symbol: '^IXIC', name: 'NASDAQ', type: 'index', displaySymbol: 'IXIC' },
+      ];
       
-      logger.info(`✓ Twelve Data returned ${quotes.length} quotes`);
+      const traditionalData: any[] = [];
       
-      if (quotes.length > 0) {
-        // Map Twelve Data quotes to our format
-        const traditionalData = quotes.map((quote, index) => {
-          // Determine asset type
-          let type: 'stock' | 'forex' | 'commodity' | 'index' = 'stock';
-          if (forexSymbols.includes(quote.symbol)) type = 'forex';
-          else if (commoditySymbols.includes(quote.symbol)) type = 'commodity';
-          else if (indexSymbols.includes(quote.symbol)) type = 'index';
-          
-          // Calculate market cap for stocks (rough estimate: price * volume * 1000)
-          const marketCap = type === 'stock' && quote.volume > 0 
-            ? quote.price * quote.volume * 1000 
-            : 0;
-          
-          return {
-            id: `traditional-${index + 1}`,
-            symbol: quote.symbol.replace('/', ''),
-            name: quote.name,
-            currentPrice: quote.price,
-            change24h: quote.percentChange,
-            volume24h: quote.volume,
-            marketCap,
-            type,
-          };
-        });
+      // Fetch in batches to avoid rate limiting
+      for (let i = 0; i < assets.length; i += 10) {
+        const batch = assets.slice(i, i + 10);
+        const symbols = batch.map(a => a.symbol).join(',');
         
+        try {
+          const response = await axios.get(`https://query1.finance.yahoo.com/v7/finance/quote`, {
+            params: { symbols },
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 5000
+          });
+          
+          if (response.data?.quoteResponse?.result) {
+            response.data.quoteResponse.result.forEach((quote: any, idx: number) => {
+              const assetInfo = batch.find(a => a.symbol === quote.symbol);
+              if (!assetInfo) return;
+              
+              traditionalData.push({
+                id: `traditional-${traditionalData.length + 1}`,
+                symbol: assetInfo.displaySymbol || assetInfo.symbol.replace('=X', '').replace('=F', '').replace('^', ''),
+                name: assetInfo.name,
+                currentPrice: quote.regularMarketPrice || 0,
+                change24h: quote.regularMarketChangePercent || 0,
+                volume24h: quote.regularMarketVolume || 0,
+                marketCap: quote.marketCap || 0,
+                type: assetInfo.type as any,
+              });
+            });
+          }
+        } catch (batchError: any) {
+          logger.warn(`Yahoo Finance batch error: ${batchError.message}`);
+        }
+        
+        // Small delay between batches
+        if (i + 10 < assets.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      if (traditionalData.length > 0) {
         marketsData = [...marketsData, ...traditionalData];
-        logger.info(`✓ Added ${traditionalData.length} REAL-TIME traditional market assets`);
-        
-        // Log breakdown by type
-        const typeCount = traditionalData.reduce((acc: any, item) => {
-          acc[item.type] = (acc[item.type] || 0) + 1;
-          return acc;
-        }, {});
-        logger.info('Traditional markets breakdown:', typeCount);
+        logger.info(`✓ Added ${traditionalData.length} REAL-TIME traditional market assets from Yahoo Finance`);
       } else {
-        logger.warn('Twelve Data returned no quotes');
+        logger.warn('Yahoo Finance returned no quotes');
       }
     } catch (traditionalError: any) {
-      logger.error('Twelve Data API error:', traditionalError.message);
+      logger.error('Yahoo Finance API error:', traditionalError.message);
     }
 
     // Return real-time data if we got any
