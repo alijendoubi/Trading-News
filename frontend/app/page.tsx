@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { PriceChange } from '@/components/ui/PriceChange';
 import { MiniChart } from '@/components/charts/MiniChart';
+import { TradingViewChart } from '@/components/charts/TradingViewChart';
+import { AssetSelectorModal } from '@/components/modals/AssetSelectorModal';
+import { QuickAlertModal } from '@/components/modals/QuickAlertModal';
 
 export default function Home() {
   const [markets, setMarkets] = useState<any[]>([]);
@@ -16,6 +19,9 @@ export default function Home() {
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'forex' | 'crypto' | 'commodities' | 'indices'>('forex');
   const [loading, setLoading] = useState(true);
+  const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [alertAsset, setAlertAsset] = useState<any>(null);
+  const [chartInterval, setChartInterval] = useState('D');
 
   useEffect(() => {
     fetchData();
@@ -69,7 +75,10 @@ export default function Home() {
     <div className="min-h-screen space-y-4">
       {/* Top Bar with Asset Selector */}
       <div className="flex items-center justify-between gap-4 p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
-        <button className="flex items-center gap-3 px-4 py-2 bg-zinc-800 hover:bg-zinc-750 rounded-lg transition-colors group">
+        <button 
+          onClick={() => setIsAssetModalOpen(true)}
+          className="flex items-center gap-3 px-4 py-2 bg-zinc-800 hover:bg-zinc-750 rounded-lg transition-colors group"
+        >
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-lg">
             {selectedAsset ? getAssetIcon(selectedAsset.type) : '💱'}
           </div>
@@ -92,12 +101,22 @@ export default function Home() {
         )}
         
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={fetchData}
+          >
             <RefreshCcw className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm">
-            <Maximize2 className="w-4 h-4" />
-          </Button>
+          {selectedAsset && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setAlertAsset(selectedAsset)}
+            >
+              <Bell className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -113,21 +132,56 @@ export default function Home() {
                 <h2 className="text-lg font-bold text-zinc-100">{selectedAsset?.symbol || 'Market'} Chart</h2>
               </div>
               <div className="flex items-center gap-2">
-                <button className="px-3 py-1 text-xs rounded bg-zinc-800 text-zinc-400 hover:text-zinc-100">1D</button>
-                <button className="px-3 py-1 text-xs rounded bg-zinc-800 text-zinc-400 hover:text-zinc-100">1W</button>
-                <button className="px-3 py-1 text-xs rounded bg-primary text-white">1M</button>
-                <button className="px-3 py-1 text-xs rounded bg-zinc-800 text-zinc-400 hover:text-zinc-100">1Y</button>
+                <button 
+                  onClick={() => setChartInterval('1')}
+                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                    chartInterval === '1' ? 'bg-primary text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-100'
+                  }`}
+                >
+                  1D
+                </button>
+                <button 
+                  onClick={() => setChartInterval('W')}
+                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                    chartInterval === 'W' ? 'bg-primary text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-100'
+                  }`}
+                >
+                  1W
+                </button>
+                <button 
+                  onClick={() => setChartInterval('D')}
+                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                    chartInterval === 'D' ? 'bg-primary text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-100'
+                  }`}
+                >
+                  1M
+                </button>
+                <button 
+                  onClick={() => setChartInterval('M')}
+                  className={`px-3 py-1 text-xs rounded transition-colors ${
+                    chartInterval === 'M' ? 'bg-primary text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-100'
+                  }`}
+                >
+                  1Y
+                </button>
               </div>
             </div>
             
-            {/* Chart Placeholder - Would integrate TradingView/Chart.js */}
-            <div className="h-64 sm:h-80 bg-zinc-950 rounded-lg flex items-center justify-center border border-zinc-800">
-              <div className="text-center">
-                <LineChart className="w-12 h-12 text-zinc-700 mx-auto mb-2" />
-                <p className="text-sm text-zinc-600">Advanced charting coming soon</p>
-                <p className="text-xs text-zinc-700 mt-1">TradingView integration</p>
+            {/* TradingView Chart */}
+            {selectedAsset ? (
+              <TradingViewChart 
+                symbol={selectedAsset.symbol}
+                interval={chartInterval}
+                height={400}
+              />
+            ) : (
+              <div className="h-96 bg-zinc-950 rounded-lg flex items-center justify-center border border-zinc-800">
+                <div className="text-center">
+                  <LineChart className="w-12 h-12 text-zinc-700 mx-auto mb-2" />
+                  <p className="text-sm text-zinc-600">Select an asset to view chart</p>
+                </div>
               </div>
-            </div>
+            )}
           </Card>
 
           {/* Markets Table */}
@@ -181,18 +235,29 @@ export default function Home() {
                     filteredMarkets.slice(0, 8).map((asset) => (
                       <tr
                         key={asset.id}
-                        onClick={() => setSelectedAsset(asset)}
-                        className="border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer transition-colors"
+                        className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors group"
                       >
                         <td className="py-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs">
-                              {getAssetIcon(asset.type)}
-                            </div>
-                            <div>
-                              <div className="font-medium text-zinc-100 text-sm">{asset.symbol}</div>
-                              <div className="text-xs text-zinc-500">{asset.name?.slice(0, 20)}</div>
-                            </div>
+                            <button
+                              onClick={() => setSelectedAsset(asset)}
+                              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                            >
+                              <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs">
+                                {getAssetIcon(asset.type)}
+                              </div>
+                              <div>
+                                <div className="font-medium text-zinc-100 text-sm">{asset.symbol}</div>
+                                <div className="text-xs text-zinc-500">{asset.name?.slice(0, 20)}</div>
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => setAlertAsset(asset)}
+                              className="ml-2 p-1 opacity-0 group-hover:opacity-100 hover:bg-zinc-700 rounded transition-all"
+                              title="Create alert"
+                            >
+                              <Bell className="w-3 h-3 text-zinc-400" />
+                            </button>
                           </div>
                         </td>
                         <td className="py-3 text-right font-mono text-zinc-100">
@@ -362,6 +427,23 @@ export default function Home() {
           </Card>
         </div>
       </div>
+
+      {/* Modals */}
+      <AssetSelectorModal
+        isOpen={isAssetModalOpen}
+        onClose={() => setIsAssetModalOpen(false)}
+        onSelect={setSelectedAsset}
+        currentAsset={selectedAsset}
+      />
+      
+      <QuickAlertModal
+        isOpen={!!alertAsset}
+        onClose={() => setAlertAsset(null)}
+        asset={alertAsset}
+        onSuccess={() => {
+          setAlertAsset(null);
+        }}
+      />
     </div>
   );
 }
