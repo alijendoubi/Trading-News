@@ -1,1 +1,17 @@
-{}
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/alerts/page": "app/alerts/page.js",
+  "/api-test/page": "app/api-test/page.js",
+  "/blog/new/page": "app/blog/new/page.js",
+  "/calendar/page": "app/calendar/page.js",
+  "/brokers/page": "app/brokers/page.js",
+  "/blog/page": "app/blog/page.js",
+  "/forum/new/page": "app/forum/new/page.js",
+  "/forum/page": "app/forum/page.js",
+  "/login/page": "app/login/page.js",
+  "/markets/page": "app/markets/page.js",
+  "/page": "app/page.js",
+  "/news/page": "app/news/page.js",
+  "/register/page": "app/register/page.js",
+  "/watchlist/page": "app/watchlist/page.js"
+}

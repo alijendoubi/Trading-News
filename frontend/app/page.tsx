@@ -2,36 +2,48 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TrendingUp, Calendar, Newspaper, Bell, Star, Activity, ArrowRight, Clock } from 'lucide-react';
+import { TrendingUp, Calendar, Newspaper, Bell, Star, Activity, ArrowRight, Clock, ChevronDown, BarChart3, LineChart, Maximize2, RefreshCcw } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { PriceChange } from '@/components/ui/PriceChange';
+import { MiniChart } from '@/components/charts/MiniChart';
 
 export default function Home() {
   const [markets, setMarkets] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [news, setNews] = useState<any[]>([]);
+  const [selectedAsset, setSelectedAsset] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'forex' | 'crypto' | 'commodities' | 'indices'>('forex');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchData();
+    const interval = setInterval(fetchData, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
     try {
-      // Fetch top 4 markets
-      const marketsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/markets/assets?limit=4`);
+      // Fetch all markets
+      const marketsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/markets`);
       const marketsData = await marketsRes.json();
-      setMarkets(marketsData.assets || []);
+      const allMarkets = marketsData.data || [];
+      setMarkets(allMarkets);
+      
+      // Set default selected asset (EUR/USD or first available)
+      if (!selectedAsset && allMarkets.length > 0) {
+        const defaultAsset = allMarkets.find((m: any) => m.symbol === 'EURUSD') || allMarkets[0];
+        setSelectedAsset(defaultAsset);
+      }
 
       // Fetch upcoming events
-      const eventsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events?limit=3`);
+      const eventsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events?limit=5`);
       const eventsData = await eventsRes.json();
       setEvents(eventsData.events || []);
 
       // Fetch latest news
-      const newsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/news?limit=3`);
+      const newsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/news?limit=4`);
       const newsData = await newsRes.json();
       setNews(newsData.articles || []);
     } catch (error) {
@@ -41,263 +53,315 @@ export default function Home() {
     }
   };
 
+  const filteredMarkets = markets.filter(m => m.type === activeTab);
+  
+  const getAssetIcon = (type: string) => {
+    const symbols: any = {
+      forex: '€',
+      crypto: '₿',
+      commodity: '🥇',
+      index: '📊'
+    };
+    return symbols[type] || '💱';
+  };
+
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden mb-8 sm:mb-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-purple-500/10 to-transparent rounded-2xl" />
-        <Card className="relative" gradient>
-          <div className="py-8 sm:py-12 lg:py-16 text-center px-4">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-              Real-Time Market Intelligence
-            </h1>
-            <p className="text-base sm:text-lg lg:text-xl text-zinc-400 mb-6 sm:mb-8 max-w-2xl mx-auto">
-              Professional trading platform with live market data, economic insights, and advanced analytics
-            </p>
-            <div className="flex gap-3 sm:gap-4 justify-center flex-wrap">
+    <div className="min-h-screen space-y-4">
+      {/* Top Bar with Asset Selector */}
+      <div className="flex items-center justify-between gap-4 p-4 bg-zinc-900/50 rounded-lg border border-zinc-800">
+        <button className="flex items-center gap-3 px-4 py-2 bg-zinc-800 hover:bg-zinc-750 rounded-lg transition-colors group">
+          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-lg">
+            {selectedAsset ? getAssetIcon(selectedAsset.type) : '💱'}
+          </div>
+          <div className="text-left">
+            <div className="text-sm font-bold text-zinc-100">{selectedAsset?.symbol || 'Select Asset'}</div>
+            <div className="text-xs text-zinc-500">Click to change</div>
+          </div>
+          <ChevronDown className="w-4 h-4 text-zinc-400 group-hover:text-zinc-100" />
+        </button>
+        
+        {selectedAsset && (
+          <div className="flex items-center gap-6">
+            <div>
+              <div className="text-2xl font-bold font-mono text-zinc-100">
+                {selectedAsset.currentPrice?.toFixed(selectedAsset.type === 'forex' ? 5 : 2)}
+              </div>
+              <PriceChange value={selectedAsset.change24h} showIcon className="text-sm" />
+            </div>
+          </div>
+        )}
+        
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm">
+            <RefreshCcw className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="sm">
+            <Maximize2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        {/* Left Column - Chart & Markets Table (2/3 width) */}
+        <div className="xl:col-span-2 space-y-4">
+          {/* Chart Section */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-bold text-zinc-100">{selectedAsset?.symbol || 'Market'} Chart</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <button className="px-3 py-1 text-xs rounded bg-zinc-800 text-zinc-400 hover:text-zinc-100">1D</button>
+                <button className="px-3 py-1 text-xs rounded bg-zinc-800 text-zinc-400 hover:text-zinc-100">1W</button>
+                <button className="px-3 py-1 text-xs rounded bg-primary text-white">1M</button>
+                <button className="px-3 py-1 text-xs rounded bg-zinc-800 text-zinc-400 hover:text-zinc-100">1Y</button>
+              </div>
+            </div>
+            
+            {/* Chart Placeholder - Would integrate TradingView/Chart.js */}
+            <div className="h-64 sm:h-80 bg-zinc-950 rounded-lg flex items-center justify-center border border-zinc-800">
+              <div className="text-center">
+                <LineChart className="w-12 h-12 text-zinc-700 mx-auto mb-2" />
+                <p className="text-sm text-zinc-600">Advanced charting coming soon</p>
+                <p className="text-xs text-zinc-700 mt-1">TradingView integration</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Markets Table */}
+          <Card className="p-4">
+            {/* Asset Type Tabs */}
+            <div className="flex items-center gap-1 mb-4 border-b border-zinc-800 overflow-x-auto">
+              {['forex', 'crypto', 'commodities', 'indices'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  className={`px-4 py-2 text-sm font-medium capitalize transition-colors whitespace-nowrap ${
+                    activeTab === tab
+                      ? 'text-zinc-100 border-b-2 border-primary'
+                      : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left text-xs text-zinc-500 border-b border-zinc-800">
+                    <th className="pb-2 font-medium">Asset</th>
+                    <th className="pb-2 font-medium text-right">Price</th>
+                    <th className="pb-2 font-medium text-right">Change</th>
+                    <th className="pb-2 font-medium text-right hidden sm:table-cell">Change %</th>
+                    <th className="pb-2 font-medium text-center hidden md:table-cell">Forecast</th>
+                    <th className="pb-2 font-medium text-right hidden lg:table-cell">%</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i} className="border-b border-zinc-800/50">
+                        <td colSpan={6} className="py-3">
+                          <div className="h-8 bg-zinc-800/50 rounded animate-pulse" />
+                        </td>
+                      </tr>
+                    ))
+                  ) : filteredMarkets.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-zinc-500">
+                        No {activeTab} markets available
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredMarkets.slice(0, 8).map((asset) => (
+                      <tr
+                        key={asset.id}
+                        onClick={() => setSelectedAsset(asset)}
+                        className="border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer transition-colors"
+                      >
+                        <td className="py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-xs">
+                              {getAssetIcon(asset.type)}
+                            </div>
+                            <div>
+                              <div className="font-medium text-zinc-100 text-sm">{asset.symbol}</div>
+                              <div className="text-xs text-zinc-500">{asset.name?.slice(0, 20)}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 text-right font-mono text-zinc-100">
+                          {asset.currentPrice?.toFixed(asset.type === 'forex' ? 5 : 2)}
+                        </td>
+                        <td className="py-3 text-right">
+                          <PriceChange value={asset.change24h} showIcon={false} />
+                        </td>
+                        <td className="py-3 text-right hidden sm:table-cell">
+                          <PriceChange value={asset.change24h} showIcon />
+                        </td>
+                        <td className="py-3 hidden md:table-cell">
+                          <div className="flex justify-center">
+                            <MiniChart data={[asset.change24h]} />
+                          </div>
+                        </td>
+                        <td className="py-3 text-right hidden lg:table-cell">
+                          <Badge variant={asset.change24h >= 0 ? 'success' : 'danger'} className="text-xs">
+                            {asset.change24h >= 0 ? '+' : ''}{(Math.abs(asset.change24h) * 0.5).toFixed(2)}%
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="mt-4 text-center">
               <Link href="/markets">
-                <Button variant="primary" size="lg">
-                  <TrendingUp className="w-5 h-5 mr-2" />
-                  Explore Markets
+                <Button variant="ghost" size="sm">
+                  View All Markets <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
+            </div>
+          </Card>
+        </div>
+
+        {/* Right Column - Widgets (1/3 width) */}
+        <div className="space-y-4">
+          {/* Economic Calendar Widget */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-zinc-100">Economic Calendar</h2>
               <Link href="/calendar">
-                <Button variant="secondary" size="lg">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  View Calendar
+                <Button variant="ghost" size="sm" className="text-xs">
+                  View All
                 </Button>
               </Link>
             </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-8 sm:mb-12">
-        <Card hover>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-zinc-400 mb-1">Markets Tracked</p>
-              <p className="text-2xl sm:text-3xl font-bold text-zinc-100">250+</p>
-            </div>
-            <Activity className="w-8 h-8 sm:w-12 sm:h-12 text-primary opacity-50" />
-          </div>
-        </Card>
-        <Card hover>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-zinc-400 mb-1">Economic Events</p>
-              <p className="text-2xl sm:text-3xl font-bold text-zinc-100">1.5K+</p>
-            </div>
-            <Calendar className="w-8 h-8 sm:w-12 sm:h-12 text-success opacity-50" />
-          </div>
-        </Card>
-        <Card hover>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-zinc-400 mb-1">News Sources</p>
-              <p className="text-2xl sm:text-3xl font-bold text-zinc-100">50+</p>
-            </div>
-            <Newspaper className="w-8 h-8 sm:w-12 sm:h-12 text-warning opacity-50" />
-          </div>
-        </Card>
-        <Card hover>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs sm:text-sm text-zinc-400 mb-1">Real-Time Updates</p>
-              <p className="text-2xl sm:text-3xl font-bold text-zinc-100">24/7</p>
-            </div>
-            <Bell className="w-8 h-8 sm:w-12 sm:h-12 text-danger opacity-50" />
-          </div>
-        </Card>
-      </div>
-
-      {/* Live Market Data */}
-      <div className="space-y-4 mb-8 sm:mb-12">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl sm:text-2xl font-bold text-zinc-100">Live Markets</h2>
-          <Link href="/markets">
-            <Button variant="ghost" size="sm">
-              View All <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          {markets.slice(0, 4).map((asset) => (
-            <Card key={asset.id} hover>
-              <div className="space-y-2">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-zinc-500">{asset.type}</p>
-                    <h3 className="font-bold text-zinc-100">{asset.symbol}</h3>
-                  </div>
-                  <Badge variant={asset.change24h >= 0 ? 'success' : 'danger'}>
-                    <PriceChange value={asset.change24h} showIcon />
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-zinc-100">
-                    ${asset.currentPrice?.toFixed(2)}
-                  </p>
-                  <p className="text-xs text-zinc-500">24h Vol: ${(asset.volume24h / 1000000).toFixed(2)}M</p>
-                </div>
+            
+            <div className="space-y-1">
+              {/* Header */}
+              <div className="flex items-center text-xs text-zinc-500 pb-2 border-b border-zinc-800">
+                <div className="flex-1">Event</div>
+                <div className="w-20 text-right">Forecast</div>
               </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Economic Events */}
-      <div className="space-y-4 mb-8 sm:mb-12">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl sm:text-2xl font-bold text-zinc-100">Upcoming Events</h2>
-          <Link href="/calendar">
-            <Button variant="ghost" size="sm">
-              View All <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
-        <div className="space-y-3">
-          {events.slice(0, 3).map((event) => (
-            <Card key={event.id} hover>
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  <Calendar className="w-5 h-5 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="font-semibold text-zinc-100">{event.title}</h3>
-                    <Badge
-                      variant={event.impact === 'high' ? 'danger' : event.impact === 'medium' ? 'warning' : 'secondary'}
-                    >
-                      {event.impact}
-                    </Badge>
+              
+              {/* Events */}
+              {loading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="py-2">
+                    <div className="h-12 bg-zinc-800/50 rounded animate-pulse" />
                   </div>
-                  <div className="flex items-center gap-3 text-sm text-zinc-500">
-                    <span>{event.country}</span>
-                    <span>•</span>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      <span>{new Date(event.date).toLocaleDateString()}</span>
-                    </div>
-                  </div>
+                ))
+              ) : events.length === 0 ? (
+                <div className="py-8 text-center text-zinc-500 text-sm">
+                  No upcoming events
                 </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Latest News */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl sm:text-2xl font-bold text-zinc-100">Latest News</h2>
-          <Link href="/news">
-            <Button variant="ghost" size="sm">
-              View All <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
-        <div className="space-y-3">
-          {news.slice(0, 3).map((article) => (
-            <Card key={article.id} hover>
-              <Link href={article.url} target="_blank" rel="noopener noreferrer">
-                <div className="space-y-2">
-                  <div className="flex items-start gap-3">
-                    {article.imageUrl && (
-                      <img
-                        src={article.imageUrl}
-                        alt={article.title}
-                        className="w-20 h-20 object-cover rounded-lg"
-                      />
-                    )}
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-zinc-100 line-clamp-2 mb-1">
-                        {article.title}
-                      </h3>
-                      <div className="flex items-center gap-2 text-xs text-zinc-500">
-                        <span>{article.source}</span>
-                        <span>•</span>
-                        <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
+              ) : (
+                events.slice(0, 5).map((event) => (
+                  <div key={event.id} className="py-2 border-b border-zinc-800/50 hover:bg-zinc-800/30 rounded px-2 -mx-2 transition-colors">
+                    <div className="flex items-start gap-2">
+                      <div className="w-6 h-6 rounded flex items-center justify-center text-xs flex-shrink-0 mt-1">
+                        {event.country === 'US' && '🇺🇸'}
+                        {event.country === 'JP' && '🇯🇵'}
+                        {event.country === 'EU' && '🇪🇺'}
+                        {event.country === 'GB' && '🇬🇧'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-zinc-100 truncate">
+                          {event.title}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-zinc-500 mt-1">
+                          <span>{new Date(event.date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <Badge 
+                            variant={event.impact === 'high' ? 'danger' : event.impact === 'medium' ? 'warning' : 'secondary'}
+                            className="text-xs px-1 py-0"
+                          >
+                            {event.impact}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-sm font-mono text-success">
+                          {event.forecast || '-'}
+                        </div>
+                        <div className="text-xs text-zinc-600">
+                          {event.previous || ''}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  {article.category && (
-                    <Badge variant="secondary" className="text-xs">{article.category}</Badge>
-                  )}
-                </div>
+                ))
+              )}
+            </div>
+          </Card>
+
+          {/* Financial News Widget */}
+          <Card className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-zinc-100">Financial News</h2>
+              <Link href="/news">
+                <Button variant="ghost" size="sm" className="text-xs">
+                  View All
+                </Button>
               </Link>
-            </Card>
-          ))}
+            </div>
+            
+            <div className="space-y-3">
+              {loading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-16 bg-zinc-800/50 rounded animate-pulse" />
+                ))
+              ) : news.length === 0 ? (
+                <div className="py-8 text-center text-zinc-500 text-sm">
+                  No news available
+                </div>
+              ) : (
+                news.slice(0, 4).map((article) => (
+                  <Link
+                    key={article.id}
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block group"
+                  >
+                    <div className="p-2 rounded hover:bg-zinc-800/30 transition-colors">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Newspaper className="w-3 h-3 text-primary flex-shrink-0" />
+                        <span className="text-xs text-zinc-500">
+                          {(() => {
+                            const now = new Date();
+                            const published = new Date(article.publishedAt);
+                            const diffMs = now.getTime() - published.getTime();
+                            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                            
+                            if (diffHours < 1) return 'Hours ago';
+                            if (diffHours < 24) return `${diffHours}h ago`;
+                            const diffDays = Math.floor(diffHours / 24);
+                            if (diffDays < 7) return `${diffDays}d ago`;
+                            return published.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                          })()}
+                        </span>
+                      </div>
+                      <h3 className="text-sm text-zinc-100 group-hover:text-primary transition-colors line-clamp-2">
+                        {article.title}
+                      </h3>
+                      <p className="text-xs text-zinc-600 mt-1">
+                        {article.source}
+                      </p>
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          </Card>
         </div>
       </div>
-
-      {/* Features Grid */}
-      <div className="grid md:grid-cols-3 gap-6 mt-12">
-        <Card hover className="card-gradient-border">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-              <TrendingUp className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="text-2xl font-bold mb-3 text-zinc-100">Live Markets</h3>
-            <p className="text-zinc-400 mb-4">
-              Monitor forex, crypto, commodities, and indices with real-time pricing and advanced charts.
-            </p>
-            <Link href="/markets">
-              <Button variant="ghost" size="sm">View Markets →</Button>
-            </Link>
-          </div>
-        </Card>
-
-        <Card hover className="card-gradient-border">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mb-4">
-              <Calendar className="w-8 h-8 text-success" />
-            </div>
-            <h3 className="text-2xl font-bold mb-3 text-zinc-100">Economic Calendar</h3>
-            <p className="text-zinc-400 mb-4">
-              Track upcoming economic events and their market impact with detailed forecasts and analysis.
-            </p>
-            <Link href="/calendar">
-              <Button variant="ghost" size="sm">View Calendar →</Button>
-            </Link>
-          </div>
-        </Card>
-
-        <Card hover className="card-gradient-border">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center mb-4">
-              <Newspaper className="w-8 h-8 text-warning" />
-            </div>
-            <h3 className="text-2xl font-bold mb-3 text-zinc-100">Financial News</h3>
-            <p className="text-zinc-400 mb-4">
-              Stay informed with aggregated news from leading financial sources and real-time updates.
-            </p>
-            <Link href="/news">
-              <Button variant="ghost" size="sm">Read News →</Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
-
-      {/* CTA Section */}
-      <Card className="mt-12" gradient>
-        <div className="py-12 text-center">
-          <Star className="w-16 h-16 text-warning mx-auto mb-4" />
-          <h2 className="text-3xl font-bold mb-4 text-zinc-100">Start Trading Smarter Today</h2>
-          <p className="text-zinc-400 mb-6 max-w-2xl mx-auto">
-            Create custom watchlists, set price alerts, and get real-time notifications for market-moving events.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Link href="/register">
-              <Button variant="primary" size="lg">Get Started Free</Button>
-            </Link>
-            <Link href="/login">
-              <Button variant="secondary" size="lg">Sign In</Button>
-            </Link>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }
